@@ -1,0 +1,17 @@
+.priceDis {
+    font-size: 1.2rem !important; /* Kích thước phông chữ */
+    font-weight : bold  !important ; /* Bôi đậm */
+    text-decoration: line-through !important; /* Gạch ngang */
+    color:red !important ;
+}
+
+li.price {
+    color: #002366 !important;
+    font-size: 1.1rem !important; /* Kích thước phông chữ */
+    font-weight : bold  !important ;
+}
+.case-img img {
+    width: 100% !important; /* Đảm bảo ảnh chiếm hết chiều rộng của vùng chứa */
+    height: 150px !important; /* Thiết lập chiều cao cố định */
+    object-fit: cover !important; /* Giữ tỷ lệ khung hình mà không bị biến dạng */
+}

@@ -1,0 +1,49 @@
+.meta-course {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Khoảng cách giữa các mục */
+    flex-wrap: wrap; /* Nếu không đủ chỗ sẽ xuống dòng */
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+.case-title{
+    font-weight: bold;
+}
+.meta-course li {
+    display: flex;
+    align-items: center;
+    
+    gap: 8px; /* Khoảng cách giữa icon và nội dung */
+}
+
+.react-ratings {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.react-book {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.react-ratings .price {
+    font-weight: bold;
+    color: #007bff; /* Màu xanh cho giá tiền */
+    font-size: 1.2rem;
+}
+.single-studies {
+    background: white; /* Giữ nền trắng để đổ bóng rõ hơn */
+    border-radius: 8px; /* Bo góc để đẹp hơn */
+    padding: 15px; /* Tạo khoảng cách bên trong */
+    transition: all 0.3s ease-in-out; /* Hiệu ứng mượt khi hover */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Đổ bóng nhẹ */
+}
+
+.single-studies:hover {
+    transform: translateY(-5px); /* Hiệu ứng nổi lên khi hover */
+    box-shadow: 0px 8px 12px rgba(0, 0, 0, 0.2); /* Đổ bóng mạnh hơn khi hover */
+}

@@ -21,7 +21,10 @@ const Blog = () => {
                 <div className="react-wrapper-inner">
                     <Breadcrumb pageTitle="Blog" />
 
-                    <BlogMain />
+                    {/* Thêm khoảng cách giữa Breadcrumb và BlogMain */}
+                    <div className="mt-4"> {/* Thay đổi giá trị margin-top theo ý muốn */}
+                        <BlogMain />
+                    </div>
 
                     {/* scrolltop-start */}
                     <ScrollToTop />

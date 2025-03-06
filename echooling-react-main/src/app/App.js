@@ -21,6 +21,7 @@ import Signup from '../pages/authentication/signup';
 import Contact from '../pages/contact';
 import Error from '../pages/404';
 import LoadTop from '../components/ScrollTop/LoadTop'
+import TestDetail from "../pages/baitest";
 
 
 const App = () => {
@@ -43,7 +44,7 @@ const App = () => {
                     <Route path="/" exact element={<Home />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/course" exact element={<Course />} />
-                  
+                    <Route path="/test" element={<TestDetail />} />
                     <Route path="/course/:id" element={<CourseDetails />} />
                     <Route path="/event" exact element={<Event />} />
                     <Route path="/event/:id" element={<EventDetails />} />

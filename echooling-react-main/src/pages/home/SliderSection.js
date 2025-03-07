@@ -52,8 +52,8 @@ const HomeSlider = () => {
                                     <div className="content-part">
                                         <span className="slider-pretitle wow animate__fadeInUp" data-wow-duration="1s">LỘ TRÌNH HỌC SIÊU TỐC  </span>
                                         <h2 className="slider-title wow animate__fadeInUp" data-wow-duration="1s">
-                                            Chúng tôi đồng hành,<br />
-                                            bạn quyết tâm
+                                            Chúng tôi đồng hành, <br />
+                                             bạn quyết tâm
                                         </h2>
                                         <div className="slider-btn wow animate__fadeInUp" data-wow-duration="1.2s">
                                             <Link to="/course" className="react-btn-border">Đăng kí</Link>

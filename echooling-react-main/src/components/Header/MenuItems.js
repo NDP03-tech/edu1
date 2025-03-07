@@ -74,8 +74,8 @@ const MenuItems = (props) => {
                 <Link to="/login">Login</Link>
             </li>
             <li className={location.pathname === '/test' ? 'menu-active' : ''}>
-                <Link to="/test">Test</Link>
-            </li>
+    <a href="/test" target="_blank" rel="noopener noreferrer">Test</a>
+</li>
         </>
     );
 }

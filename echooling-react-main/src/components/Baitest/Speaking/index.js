@@ -43,15 +43,6 @@ const SpeakingComponent = ({ setVideoUrl }) => {
         <strong>
           <span style={{ color: '#333333', fontSize: '24px', fontFamily: 'Georgia' }}>
             <em>
-              Listen to the life mottos below, choose one and tell a story in your life that resonates with the motto you choose.
-            </em>
-          </span>
-        </strong>
-      </p>
-      <p style={{ backgroundColor: '#fff8dc', textAlign: 'left', padding: '15px' }}>
-        <strong>
-          <span style={{ color: '#333333', fontSize: '24px', fontFamily: 'Georgia' }}>
-            <em>
               Chọn một phương châm sống sau đây và kể một câu chuyện đã xảy ra với em mà em thấy đúng với phương châm đó.
             </em>
           </span>
@@ -66,6 +57,23 @@ const SpeakingComponent = ({ setVideoUrl }) => {
           </span>
         </strong>
       </p>
+      <p style={{ backgroundColor: '#fff8dc', textAlign: 'left', padding: '15px' }}>
+  <strong>
+    <span style={{ color: '#333333', fontSize: '24px', fontFamily: 'Georgia' }}>
+      <em>
+        Chọn một phương châm sống sau đây và kể một câu chuyện đã xảy ra với em mà em thấy đúng với phương châm đó:
+      </em>
+    </span>
+  </strong>
+  <ol style={{ marginTop: '10px', fontSize: '20px', fontFamily: 'Georgia', color: '#555' }}>
+    <li><strong>"Success is earned through sweat and persistence."</strong> - Thành công được kiếm bằng mồ hôi và sự kiên trì.</li>
+    <li><strong>"Work hard today for a better tomorrow."</strong> - Làm việc chăm chỉ hôm nay để có ngày mai tốt đẹp hơn.</li>
+    <li><strong>"No shortcuts, just hard work."</strong> - Không có lối tắt, chỉ có làm việc chăm chỉ.</li>
+    <li><strong>"Dream big, work harder."</strong> - Mơ lớn, làm việc chăm chỉ hơn.</li>
+    <li><strong>"Effort today, pride forever."</strong> - Nỗ lực hôm nay, tự hào mãi mãi.</li>
+  </ol>
+</p>
+
       <hr style={{ height: '2px', borderWidth: 0, color: 'gray', backgroundColor: 'gray' }} />
       <p style={{ fontSize: '20px', color: '#333333' }}>
         <strong>Paste your video URL here:</strong>

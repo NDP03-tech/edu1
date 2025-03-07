@@ -21,6 +21,7 @@ import Signup from '../pages/authentication/signup';
 import Contact from '../pages/contact';
 import Error from '../pages/404';
 import LoadTop from '../components/ScrollTop/LoadTop'
+import TestEntry from "../pages/baitest/TestEntry";
 import TestDetail from "../pages/baitest";
 
 

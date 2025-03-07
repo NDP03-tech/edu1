@@ -157,8 +157,8 @@ const ReadingSection = ({setBandScore}) => {
   <table className="table">
   <tbody>
     <tr>
-      <td style={{ verticalAlign: 'top', width: '60%' }}>
-        <div style={{ overflowY: 'scroll', height: '900px', backgroundColor: '#fffeec', padding: '5px' }}>
+      <td style={{ verticalAlign: 'top', width: '60%',height: '100%' }}>
+        <div style={{  overflowY: "auto",maxHeight: "100vh", backgroundColor: '#fffeec', padding: '5px',height: '100%' }}>
           <div align="center">
             <strong>
               <span style={{ fontSize: '20px', fontFamily: 'Helvetica', lineHeight: '24px', color: '#000000' }}>
@@ -195,7 +195,16 @@ const ReadingSection = ({setBandScore}) => {
           </p>
         </div>
       </td>
-      <td style={{ verticalAlign: 'top', width: '40%', fontSize: '16px', fontFamily: 'Helvetica' }}>
+      <td style={{  overflowY: "auto",verticalAlign: 'top', width: '40%', fontSize: '16px', fontFamily: 'Helvetica',height: '100%',position: "relative" }}>
+      <div 
+          style={{
+            top: "10px",
+            maxHeight: "100vh",
+            overflowY: "auto",
+            padding: "10px",
+            backgroundColor: "white" }}
+          
+        >
         <p style={{ fontSize: '20px' }}>
           <strong>Questions 1-5. Match the person A-D with the correct information</strong>
         </p>
@@ -274,6 +283,7 @@ const ReadingSection = ({setBandScore}) => {
             <strong>13.</strong> <input type="text" value={answers.question13} onChange={(e) => setAnswers({ ...answers, question13: e.target.value })} /> Cheetah hide hunting gains from younger one.
           </span>
         </p>
+        </div>
       </td>
     </tr>
   </tbody>
@@ -283,7 +293,7 @@ const ReadingSection = ({setBandScore}) => {
     <tbody>
       <tr>
         <td style={{ verticalAlign: 'top', width: '800px', maxHeight: '500px' }}>
-          <div style={{ overflowY: 'scroll', height: '900px', backgroundColor: '#fffeec', padding: '5px' }}>
+        <div style={{  overflowY: "auto",maxHeight: "100vh", backgroundColor: '#fffeec', padding: '5px',height: '100%' }}>
             <div align="center">
               <strong>
                 <span style={{ fontSize: '20px', fontFamily: 'Helvetica', lineHeight: '24px', color: '#000000' }}>
@@ -316,7 +326,16 @@ const ReadingSection = ({setBandScore}) => {
             </div>
           </div>
         </td>
-        <td style={{ verticalAlign: 'top', fontSize: '16px', fontFamily: 'Helvetica' }}>
+        <td style={{  overflowY: "auto",verticalAlign: 'top', width: '40%', fontSize: '16px', fontFamily: 'Helvetica',height: '100%',position: "relative" }}>\
+        <div 
+          style={{
+            top: "10px",
+            maxHeight: "100vh",
+            overflowY: "auto",
+            padding: "10px",
+            backgroundColor: "white" }}
+          
+        >
           <p style={{ fontSize: '18px' }}>
             <strong>Questions 14-20 YES/NO/NOT GIVEN</strong>
           </p>
@@ -406,6 +425,7 @@ const ReadingSection = ({setBandScore}) => {
             <input type="text" value={answers.question25} onChange={(e) => setAnswers({ ...answers, question25: e.target.value })} />; 
             <input type="text" value={answers.question26} onChange={(e) => setAnswers({ ...answers, question26: e.target.value })} />
           </p>
+          </div>
         </td>
       </tr>
     </tbody>
@@ -415,8 +435,16 @@ const ReadingSection = ({setBandScore}) => {
     <tbody>
       <tr>
         <td style={{ verticalAlign: 'top', width: '800px' }}>
-          <div style={{ overflowY: 'scroll', height: '900px', backgroundColor: '#fffeec', padding: '5px' }}>
-            <div align="center">
+           <div style={{  overflowY: "auto",maxHeight: "100vh", backgroundColor: '#fffeec', padding: '5px',height: '100%' }}>
+           <div 
+          style={{
+            top: "10px",
+            maxHeight: "100vh",
+            overflowY: "auto",
+            padding: "10px",
+            backgroundColor: "white" }}
+          
+        >
               <strong>
                 <span style={{ fontSize: '20px', fontFamily: 'Helvetica', lineHeight: '24px', color: '#000000' }}>
                   Passage 3: <strong>CALISTHENICS</strong>
@@ -452,6 +480,15 @@ const ReadingSection = ({setBandScore}) => {
           </div>
         </td>
         <td style={{ verticalAlign: 'top', fontSize: '16px', fontFamily: 'Helvetica' }}>
+        <div 
+          style={{
+            top: "10px",
+            maxHeight: "100vh",
+            overflowY: "auto",
+            padding: "10px",
+            backgroundColor: "white" }}
+          
+        >
           <p style={{ fontSize: '18px' }}>
             <strong>Questions 27–33</strong> The text has eight paragraphs, A–H. Which paragraph contains:
           </p>
@@ -484,6 +521,7 @@ const ReadingSection = ({setBandScore}) => {
           <p style={{ fontSize: '18px' }}>
             Currently, a revival of calisthenics is underway as extreme muscle building can harm the body leaving it sore, <strong>39.</strong> <input type="text" value={answers.question39} onChange={(e) => setAnswers({ ...answers, question39: e.target.value })} />, and in poor cardiovascular health. Thus, the majority of residents want to <strong>40.</strong> <input type="text" value={answers.question40} onChange={(e) => setAnswers({ ...answers, question40: e.target.value })} /> the original Greek vision for recuperation.
           </p>
+          </div>
         </td>
       </tr>
     </tbody>

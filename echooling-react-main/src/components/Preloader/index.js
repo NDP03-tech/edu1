@@ -1,6 +1,6 @@
 import React from "react";
 
-import loaderImg from '../../assets/images/preload.png'
+import loaderImg from '../../assets/images/logos/logo-footer.png'
 
 const Preloader = () => {
   return (

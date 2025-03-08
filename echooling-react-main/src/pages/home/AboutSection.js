@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 // Image
 import aboutImg from '../../assets/images/about/ab.png';
-import aboutBadge from '../../assets/images/about/badge.png';
+import aboutBadge from '../../assets/images/logos/logo-footer.png';
 
 const About = () => {
 
@@ -13,7 +13,30 @@ const About = () => {
                     <div className="col-lg-6">
                         <div className="about__image">
                             <img src={aboutImg} alt="About" />
-                            <img className="react__shape__ab" src={aboutBadge} alt="Shape Image" />
+                            <div 
+                                style={{ 
+                                    position: "absolute", // Cố định vị trí theo phần tử cha
+                                    top: "50%", // Đưa về giữa theo chiều dọc
+                                    left: "50%", // Đưa về giữa theo chiều ngang
+                                    transform: "translate(-90%, -100%)", // Căn chỉnh chính xác
+                                    width: "100px", 
+                                    height: "100px", 
+                                    borderRadius: "50%", 
+                                    backgroundColor: "#0A1F50", // Màu xanh nhạt
+                                    display: "flex", 
+                                    justifyContent: "center", 
+                                    alignItems: "center", 
+                                    boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                                    zIndex: 30 // Đảm bảo hiển thị trên cùng
+                                }}
+                            >
+                                <img 
+                                    src={aboutBadge} 
+                                    alt="Shape Image" 
+                                    style={{ width: "80%", height: "80%", borderRadius: "50%", objectFit: "cover" }} 
+                                />
+                            </div>
+                        
                         </div>
                     </div>
                     <div className="col-lg-6">

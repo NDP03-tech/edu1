@@ -37,6 +37,8 @@ const TestDetail = () => {
 
   const handleSubmit = () => {
     if (formRef.current) {
+      setTimeLeft(0);
+
       formRef.current.handleSubmit({
         ...formData,
         writingEssay,
@@ -45,6 +47,7 @@ const TestDetail = () => {
         listeningScore,
         overall: ((listeningScore + readingScore) / 2).toFixed(1),
       });
+      alert('✅ Nộp bài thành công! Cảm ơn bạn đã hoàn thành bài thi.');
     }
   };
 

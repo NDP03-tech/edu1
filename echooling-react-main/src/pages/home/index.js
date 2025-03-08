@@ -70,32 +70,36 @@ const HomePage = () => {
                 >
                     <div style={{ 
                         backgroundColor: 'white', 
+                        position: 'relative',
                         padding: '24px', 
                         borderRadius: '8px', 
                         boxShadow: '0 10px 15px rgba(0, 0, 0, 0.1)', 
                         maxWidth: '800px', 
-                        width: '80%',
-                        position: 'relative'  // Add this
+                        width: '90%',
+                        margin: isMobile ? '20px 0' : 'auto',
+                        maxHeight: isMobile ? '90vh' : 'auto',
+                        overflowY: isMobile ? 'auto' : 'visible'
                     }} onClick={(e) => e.stopPropagation()}>
                         {/* Add close button */}
                         <button 
                             style={{
                                 position: 'absolute',
-                                top: '-40px',
-                                right: '-40px',
-                                backgroundColor: 'white',
-                                border: 'none',
-                                borderRadius: '50%',
-                                width: '36px',
-                                height: '36px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                fontSize: '20px',
-                                fontWeight: 'bold',
-                                color: '#666',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+        top: isMobile ? '10px' : '-40px',
+        right: isMobile ? '10px' : '-40px',
+        backgroundColor: 'white',
+        border: 'none',
+        borderRadius: '50%',
+        width: '36px',
+        height: '36px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        fontSize: '20px',
+        fontWeight: 'bold',
+        color: '#666',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+        zIndex: 60
                             }}
                             onClick={handleClosePopup}
                         >
@@ -110,7 +114,9 @@ const HomePage = () => {
                                 flex: isMobile ? 'none' : 1, 
                                 paddingRight: isMobile ? '0' : '16px',
                                 textAlign: 'center',
-                                marginBottom: isMobile ? '20px' : '0'
+                                marginBottom: isMobile ? '20px' : '0',
+                                 maxHeight: isMobile ? '300px' : 'auto',
+                                overflowY: isMobile ? 'auto' : 'visible'
                             }}>
                                 <h1 style={{ 
                                     fontSize: isMobile ? '1.5rem' : '1.8rem', 
@@ -120,9 +126,9 @@ const HomePage = () => {
                                 }}>Đăng Ký Ngay Để Nhận Ưu Đãi!</h1>
                                 <div style={{ 
                                     width: '100%', 
-                                    maxWidth: isMobile ? '250px' : '320px', 
+                                    maxWidth: isMobile ? '200px' : '320px', 
                                     height: 'auto', 
-                                    overflow: 'hidden', 
+                                   
                                     borderRadius: '8px', 
                                     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)', 
                                     margin: '0 auto' 
@@ -247,17 +253,19 @@ const HomePage = () => {
                                 </button>
                                 <button 
         style={{ 
-            backgroundColor: isBlinking ? '#dc2626' : '#0ea5e9',
-            color: 'white', 
-            padding: '13.5px 24px', 
-            borderRadius: '8px', 
-            transition: 'all 0.3s',
-             fontWeight: '600',
-            border: 'none',
-            backgroundColor: '#3b82f6', 
+            marginTop: '20px', 
             marginRight:'20px',
-            cursor: 'pointer'
-        }} 
+            backgroundColor: '#3b82f6', 
+            color: 'white', 
+            padding: '12px 24px', 
+            borderRadius: '8px', 
+            transition: 'background-color 0.3s',
+            width: isMobile ? '100%' : 'auto',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: isMobile ? '1rem' : '1.1rem',
+            fontWeight: '600'
+        }}      
         onClick={handleFreeTestClick}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0284c7'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0ea5e9'}

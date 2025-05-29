@@ -1,11 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import SingleEvent from '../../components/Event/SingleEvent';
-import events from '../../data/Events.json';
+import axios from 'axios';
 
 const EventMain = () => {
     const itemsPerPage = 8; // Số sự kiện mỗi trang
     const [currentPage, setCurrentPage] = useState(1);
+    const [events, setEvents] = useState([]); // State để lưu sự kiện
+    const [loading, setLoading] = useState(true); // State để quản lý trạng thái loading
+    const [error, setError] = useState(null); // State để quản lý lỗi
+
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                const response = await axios.get('http://localhost:5000/api/events'); // Gọi API
+                setEvents(response.data); // Lưu dữ liệu sự kiện vào state
+                setLoading(false); // Cập nhật trạng thái loading
+            } catch (err) {
+                console.error('Error fetching events:', err);
+                setError('Failed to fetch events'); // Cập nhật lỗi nếu có
+                setLoading(false); // Cập nhật trạng thái loading
+            }
+        };
+
+        fetchEvents();
+    }, []);
 
     // Tính toán danh sách sự kiện theo trang hiện tại
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -16,9 +35,17 @@ const EventMain = () => {
     const totalPages = Math.ceil(events.length / itemsPerPage);
 
     // Chuyển trang
-    const paginate = (pageNumber) => {setCurrentPage(pageNumber);
-       
-    window.scrollTo(0, 0);
+    const paginate = (pageNumber) => {
+        setCurrentPage(pageNumber);
+        window.scrollTo(0, 0);
+    };
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    if (error) {
+        return <div>{error}</div>;
     }
 
     return (

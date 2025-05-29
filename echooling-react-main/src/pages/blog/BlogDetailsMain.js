@@ -1,25 +1,57 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import posts from '../../data/Posts.json';
-
-import userImg from '../../assets/images/course-single/user.jpg';
 
 const BlogMain = (props) => {
     const { postTitle, postImg, postContent } = props;
 
+    const [relatedPosts, setRelatedPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchRelatedPosts = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/blog');
+                if (!response.ok) {
+                    throw new Error('Không thể tải dữ liệu bài viết');
+                }
+                const data = await response.json();
+                setRelatedPosts(data);
+            } catch (error) {
+                console.error("Lỗi API:", error.message);
+                setError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRelatedPosts();
+    }, []);
+
+    if (loading) return <div>⏳ Đang tải...</div>;
+    if (error) return <div style={{ color: 'red' }}>❌ Lỗi: {error}</div>;
+
     return (
         <div className="back__course__page_grid react-courses__single-page pb---40 pt---110">
-            <div className="container ">
+            <div className="container">
                 <div className="row">
-                    <div>                                
+                    <div>
                         <div className="blog-single-inner">
                             <div className="blog-content">
-                                <div className="blog-image">
-                                    <img src={require(`../../assets/images/blog/${postImg}`)} alt={postTitle} />
+                                <div className="blog-image" style={{ maxWidth: '800px', margin: '20px auto', overflow: 'hidden' }}>
+                                    <img 
+                                        src={postImg} 
+                                        alt={postTitle} 
+                                        style={{ 
+                                            width: '100%', 
+                                            height: 'auto', 
+                                            objectFit: 'cover' 
+                                        }} 
+                                    />
                                 </div>
 
                                 <p dangerouslySetInnerHTML={{ __html: postContent.replace(/\n/g, '<br />') }}></p>
-                                <a href="https://goo.gl/xahbn4" target="_blank">Link đăng ký nhập học : https://goo.gl/xahbn4</a>
+                                <a href="https://goo.gl/xahbn4" target="_blank" rel="noopener noreferrer">Link đăng ký nhập học : https://goo.gl/xahbn4</a>
                                 <div className="blog-tags">
                                     <div className="row align-items-center">
                                         <div className="col-md-2">
@@ -41,48 +73,48 @@ const BlogMain = (props) => {
                                             </div>
                                         </div>
                                     </div>
-                                </div> 
-                                <div className="single-nav"> 
+                                </div>
+                                <div className="single-nav">
                                     <div className="back-prev">
                                         <Link to="#"><i className="back-icon arrow_carrot-left"></i> PREV POST <em>Graduate Admissions</em></Link>
-                                    </div>                                            
+                                    </div>
                                     <div className="back-next">
                                         <Link to="#"> NEXT POST <i className="back-icon arrow_carrot-right"></i> <em> Less is More</em></Link>
                                     </div>
                                 </div>
 
-                                <div className="react-course-filter related__course">                                  
-                                    <h3>Related Posts</h3>                                             
-                                    <div className="row">     
-                                        {posts.map((data, index) => {
+                                <div className="react-course-filter related__course">
+                                    <h3>Related Posts</h3>
+                                    <div className="row">
+                                        {relatedPosts.map((data, index) => {
                                             return (
                                                 <div key={index} className="single-studies col-md-4 grid-item">
                                                     <div className="inner-course">
                                                         <div className="case-img">
-                                                            <Link to="#" className="cate-w">April 12</Link>
-                                                            <img src={require(`../../assets/images/blog/${data.image}`)} alt={data.title} />
+                                                            <Link to="#" className="cate-w">{data.publishedDate}</Link>
+                                                            <img src={data.image} alt={data.title} />
                                                         </div>
-                                                        <div className="case-content"> 
-                                                            <em className="cate-camp">{data.category}</em>                                                    
+                                                        <div className="case-content">
+                                                            <em className="cate-camp">{data.category}</em>
                                                             <h4 className="case-title">
                                                                 <Link to={`/blog/${data.id}`}>{data.title}</Link>
                                                             </h4>
                                                             <div className="react__user">
-                                                                <img src={require(`../../assets/images/blog/${data.authorImg}`)} alt={data.author} /> {data.author}
-                                                            </div>                                                    
+                                                                <img src={data.authorImg} alt={data.author} /> {data.author}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )
-                                        }).slice(5, 8)}
+                                        }).slice(0, 3)} {/* Chỉ hiển thị 3 bài viết liên quan */}
                                     </div>
                                 </div>
                             </div>
-                        </div>                         
+                        </div>
                     </div>
                 </div>
             </div>
-        </div> 
+        </div>
     );
 }
 

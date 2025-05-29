@@ -1,63 +1,79 @@
-import React from 'react';
+import React, { useState } from 'react';
+import axios from 'axios';
+import { useNavigate, Navigate } from 'react-router-dom';
 
-const LoginMain = () => {
+const LoginMain = ({ onLogin, setIsLoggedIn }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [message, setMessage] = useState('');
+    const [redirectToDashboard, setRedirectToDashboard] = useState(false);
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setMessage('');
+
+        try {
+            const res = await axios.post('http://localhost:5000/api/login', { email, password });
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('role', res.data.user.role);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+
+            setIsLoggedIn(true);
+            onLogin();
+            setRedirectToDashboard(true); // <-- Trigger redirect
+        } catch (err) {
+            console.log('Lỗi đăng nhập:', err);
+            setMessage(err.response?.data?.message || 'Đăng nhập thất bại');
+        }
+    };
+
+    if (redirectToDashboard) {
+        const role = localStorage.getItem('role');
+        return <Navigate to={role === 'admin' ? '/admin' : '/user'} />;
+    }
+
     return (
-        <>
-            <div className="react-login-page react-signup-page pt---120 pb---120">
-                <div className="container">
-                    <div className="row">                            
-                        <div className="col-lg-12">
-                            <div className="login-right-form">
-                                <form>
-                                    <div className="login-top">
-                                        <h3>Login</h3>
-                                        <p>Don't have an account yet? </p>
-                                    </div>
-                                    <p>
-                                        <label>Email</label>
-                                        <input placeholder="Email" type="email" id="email" name="email" />
-                                    </p>
-                                    <p>
-                                        <label>Password</label>
-                                        <input placeholder="Password" type="password" id="pass" name="pass" />
-                                    </p>
-                                    <div className="back-check-box">
-                                        <input type="checkbox" id="box-1" /> Remember me
-                                        <p>Forget password?</p>
-                                    </div>
-                                    <button 
-    type="submit" 
-    id="button" 
-    name="submit" 
-    style={{ 
-        backgroundColor: '#002366', 
-        color: 'white', 
-        border: 'none', 
-        padding: '10px 20px', 
-        borderRadius: '5px', 
-        cursor: 'pointer', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center' /* Căn giữa theo chiều ngang */
-    }}
->
-    Login 
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-arrow-right">
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-        <polyline points="12 5 19 12 12 19"></polyline>
-    </svg>
-</button>
-                                                                       
-                                </form>
-                            </div>
+        <div className="react-login-page react-signup-page pt---120 pb---120">
+            <div className="container">
+                <div className="row">                            
+                    <div className="col-lg-12">
+                        <div className="login-right-form">
+                            <form onSubmit={handleLogin}>
+                                <div className="login-top">
+                                    <h3>Đăng Nhập</h3>
+                                    <p>Chưa có tài khoản? </p>
+                                </div>
+                                <div className="mb-3">
+                                    <label>Email</label>
+                                    <input 
+                                        type="email" 
+                                        placeholder="Email" 
+                                        value={email} 
+                                        onChange={(e) => setEmail(e.target.value)} 
+                                        required
+                                        className="form-control"
+                                    />
+                                </div>
+                                <div className="mb-3">
+                                    <label>Mật Khẩu</label>
+                                    <input 
+                                        type="password" 
+                                        placeholder="Mật Khẩu" 
+                                        value={password} 
+                                        onChange={(e) => setPassword(e.target.value)} 
+                                        required
+                                        className="form-control"
+                                    />
+                                </div>
+                                <button type="submit" className="btn btn-primary">Đăng Nhập</button>
+                                {message && <p className="text-danger">{message}</p>}
+                            </form>
                         </div>
                     </div>
                 </div>
-            </div>   
-        </>
-
+            </div>
+        </div>
     );
-}
-
+};
 
 export default LoginMain;

@@ -1,16 +1,42 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import ReactPaginate from "react-paginate";
 import SingleCourseThree from "../../components/Course/SingleCourseThree";
-import courses from "../../data/Courses.json";
 import "./CourseGridMain.css"; // Import file CSS để tùy chỉnh giao diện pagination
 
 const CourseGridMain = () => {
+    const [courses, setCourses] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
     const [category, setCategory] = useState("All Categories");
     const [skill, setSkill] = useState("All Skills");
     const [sortBy, setSortBy] = useState("default");
     const [currentPage, setCurrentPage] = useState(0);
     const coursesPerPage = 6; // Số khóa học hiển thị mỗi trang
+
+    // Gọi API lấy danh sách khóa học
+    useEffect(() => {
+        const fetchCourses = async () => {
+            try {
+                const response = await fetch("http://localhost:5000/courses");
+                if (!response.ok) {
+                    throw new Error("Lỗi khi lấy danh sách khóa học");
+                }
+                const data = await response.json();
+                setCourses(data);
+            } catch (error) {
+                setError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCourses();
+    }, []);
+
+    if (loading) return <div>Đang tải dữ liệu...</div>;
+    if (error) return <div>Lỗi: {error}</div>;
 
     // Lấy danh sách các danh mục duy nhất từ dữ liệu khóa học
     const uniqueCategories = ["All Categories", ...new Set(courses.map(course => course.name))];
@@ -95,7 +121,7 @@ const CourseGridMain = () => {
                     {displayedCourses.map((data, index) => (
                         <div key={index} className="col-lg-4">
                             <SingleCourseThree
-                                courseID={data.id}
+                                courseID={data._id} // Nếu backend dùng MongoDB, ID có thể là `_id`
                                 courseImg={data.image}
                                 courseTitle={data.title}
                                 courseName={data.name}

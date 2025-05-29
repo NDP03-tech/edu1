@@ -1,0 +1,19 @@
+/* Đảm bảo các cột có chiều cao và chiều rộng cố định */
+.scrollable-content {
+    max-height: 400px; /* Bạn có thể thay đổi chiều cao này tùy ý */
+    overflow-y: auto; /* Cuộn dọc khi nội dung quá dài */
+    overflow-x: hidden; /* Không cuộn ngang */
+    padding: 10px; /* Để có khoảng cách bên trong */
+    font-size: 14px; /* Điều chỉnh font size nếu cần */
+  }
+  
+  /* Cột bên trái và bên phải có chiều rộng 50% mỗi cột */
+  table.table-bordered th, table.table-bordered td {
+    vertical-align: top; /* Đảm bảo nội dung căn lề trên cùng */
+  }
+  
+  table.table-bordered {
+    width: 100%;
+    table-layout: fixed; /* Đảm bảo mỗi cột có chiều rộng cố định */
+  }
+  

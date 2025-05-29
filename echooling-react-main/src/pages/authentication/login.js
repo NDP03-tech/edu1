@@ -4,11 +4,14 @@ import Footer from '../../components/Footer';
 import Breadcrumb from '../../components/Breadcrumb';
 import LoginMain from './LoginMain';
 import ScrollToTop from '../../components/ScrollTop';
-
 import Logo from '../../assets/images/logos/logo2.png';
 
+const Login = ({ onLogin, setIsLoggedIn }) => {
+    const handleLogin = () => {
+        // Logic để xử lý khi người dùng đăng nhập thành công
+        console.log('User logged in successfully');
+    };
 
-const Login = () => {
     return (
         <>
             <Header
@@ -24,7 +27,7 @@ const Login = () => {
                         pageTitle="Login"
                     />
 
-                    <LoginMain />
+<LoginMain onLogin={handleLogin} setIsLoggedIn={setIsLoggedIn} />
 
                     {/* scrolltop-start */}
                     <ScrollToTop />
@@ -33,11 +36,8 @@ const Login = () => {
             </div>
 
             <Footer />
-
         </>
     );
 }
 
-
 export default Login;
-

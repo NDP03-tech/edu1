@@ -1,24 +1,52 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom'; // ✅ Sử dụng useParams()
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import Breadcrumb from '../../components/Breadcrumb/CourseBreadcrumbs';
 import CourseDetailsMain from './CourseDetailsMain';
 import ScrollToTop from '../../components/ScrollTop';
-import courses from '../../data/Courses.json';
-
 import Logo from '../../assets/images/logos/logo2.png';
 
 const CourseDetails = () => {
-    const location = useLocation();
-    const courseURL = location.pathname.split('/'); 
-    const course = courses.find((b) => b.id === Number(courseURL[2]));
+    const { id } = useParams(); 
+    const courseID = id ? id.trim() : ''; // ✅ Xử lý ID tránh lỗi khoảng trắng hoặc xuống dòng
 
-    if (!course) {
-        return <div>Khóa học không tồn tại.</div>;
-    }
+    console.log("Course ID:", courseID); // ✅ Kiểm tra giá trị ID
 
-    const flatPrice = course.price.split('.');
+    const [course, setCourse] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!courseID || courseID.length !== 24) {  // ✅ Kiểm tra ObjectId hợp lệ (24 ký tự)
+            setError("ID không hợp lệ");
+            setLoading(false);
+            return;
+        }
+
+        const fetchCourseDetails = async () => {
+            try {
+                const response = await fetch(`http://localhost:5000/courses/${courseID}`);
+                if (!response.ok) {
+                    const errorData = await response.json(); // ✅ Lấy thông tin lỗi từ backend
+                    throw new Error(errorData.message || 'Không thể tải dữ liệu khóa học');
+                }
+                const data = await response.json();
+                setCourse(data);
+            } catch (error) {
+                console.error("Lỗi API:", error.message); // ✅ Log lỗi ra console để debug
+                setError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCourseDetails();
+    }, [courseID]);
+
+    if (loading) return <div>⏳ Đang tải...</div>;
+    if (error) return <div style={{ color: 'red' }}>❌ Lỗi: {error}</div>;
+    if (!course) return <div>⚠️ Khóa học không tồn tại.</div>;
 
     return (
         <div className="course-single">
@@ -41,7 +69,7 @@ const CourseDetails = () => {
                     />
 
                     <CourseDetailsMain
-                        courseID={course.id}
+                        courseID={course._id}  // ✅ Đảm bảo ID đúng
                         courseImg={course.image}
                         courseTitle={course.title}
                         courseName={course.name}
@@ -52,7 +80,7 @@ const CourseDetails = () => {
                         coursePrice={course.price}
                         courseLanguage={course.language}
                         courseContent={course.content}
-                        courseSchedule={course.schedule} // Thêm lịch học
+                        courseSchedule={course.schedule} 
                     />
 
                     {/* scrolltop-start */}

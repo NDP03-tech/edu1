@@ -9,15 +9,16 @@ import Event from './EventSection';
 import Counter from './CounterSection';
 
 import ScrollToTop from '../../components/ScrollTop';
-
+import MenuItems from '../../components/Header/MenuItems';
 const HomeMain =() => {
 		return (
 			<>
+
 				<div className="react-wrapper">
             		<div className="react-wrapper-inner">
+						<MenuItems/>
 					<HomeSlider />
 						<About />
-
 
 						<Course />
 

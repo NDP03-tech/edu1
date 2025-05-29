@@ -1,3 +1,4 @@
+
 @charset "utf-8";
 /**
 *
@@ -8717,6 +8718,10 @@ ul {
             position: relative;
         }
 
+        img {
+            width:100%;
+        }
+
         .breadcrumbs-inner {
             width: 100%;
             position: absolute;
@@ -8725,6 +8730,7 @@ ul {
 
             .breadcrumbs-text {
                 text-align: center;
+                transform: translateY(75%);
 
                 .breadcrumbs-title {
                     width: 100%;
@@ -14794,3 +14800,4 @@ div.event-page {
         }
     }
 }
+

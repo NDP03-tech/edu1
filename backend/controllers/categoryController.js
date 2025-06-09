@@ -1,4 +1,5 @@
 const Category = require('/Users/nguyendacphuc/Downloads/edu/edu1/backend/models/Category.js');
+const Quiz = require('../models/Quiz'); // 👈 Thêm dòng này để dùng được Quiz
 
 // Lấy tất cả danh mục
 exports.getAllCategories = async (req, res) => {
@@ -25,6 +26,26 @@ exports.createCategory = async (req, res) => {
     const category = new Category({ name });
     await category.save();
     res.status(201).json(category);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+exports.deleteCategoryAndQuizzes = async (req, res) => {
+  const { categoryId } = req.params;
+
+  try {
+    const category = await Category.findById(categoryId);
+    if (!category) return res.status(404).json({ message: 'Category not found' });
+
+    // Xoá toàn bộ quiz thuộc danh mục
+    await Quiz.deleteMany({ category: category.name });
+
+    // Xoá danh mục
+    await Category.findByIdAndDelete(categoryId);
+
+    res.json({ message: 'Category and related quizzes deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

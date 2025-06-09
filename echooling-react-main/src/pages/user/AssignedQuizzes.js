@@ -1,139 +1,143 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPlay } from 'react-icons/fa';
+import { Table, Typography, Spin, Button, Tag, Empty } from 'antd';
+import { PlayCircleOutlined } from '@ant-design/icons';
+
+const { Title } = Typography;
 
 const AssignedQuizzes = () => {
-    const [quizzes, setQuizzes] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const [quizzes, setQuizzes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchQuizzesWithAttempts = async () => {
-            const token = localStorage.getItem('token');
-            const userStr = localStorage.getItem('user');
+  useEffect(() => {
+    const fetchQuizzesWithAttempts = async () => {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      if (!token || !userStr) return setLoading(false);
 
-            if (!token || !userStr) {
-                console.error("Missing token or user info");
-                setLoading(false);
-                return;
-            }
+      let user;
+      try {
+        user = JSON.parse(userStr);
+      } catch {
+        return setLoading(false);
+      }
 
-            let user;
+      const userId = user._id || user.id;
+      try {
+        const res = await fetch(`http://localhost:5000/api/${userId}/quizzes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+
+        const quizzesWithAttempts = await Promise.all(
+          data.map(async (quiz) => {
             try {
-                user = JSON.parse(userStr);
+              const latestRes = await fetch(
+                `http://localhost:5000/api/results/latest/${quiz._id}`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+
+              const latestAttempt = latestRes.ok ? await latestRes.json() : null;
+
+              return {
+                ...quiz,
+                latestAttempt,
+                attemptsCount: latestAttempt?.attemptNumber ?? 0,
+              };
             } catch (err) {
-                console.error("Failed to parse user JSON", err);
-                setLoading(false);
-                return;
+              console.error('Error fetching quiz attempt:', err);
+              return { ...quiz, latestAttempt: null, attemptsCount: 0 };
             }
-
-            const userId = user._id || user.id;
-            if (!userId) {
-                console.error("User ID is missing");
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const res = await fetch(`http://localhost:5000/api/${userId}/quizzes`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!res.ok) throw new Error('Failed to fetch quizzes');
-
-                const data = await res.json();
-
-                // Fetch latest attempt for each quiz
-                const quizzesWithAttempts = await Promise.all(
-                    data.map(async (quiz) => {
-                        try {
-                            const attemptRes = await fetch(`http://localhost:5000/api/results/latest/${quiz._id}`, {
-                                headers: {
-                                    'Authorization': `Bearer ${token}`
-                                }
-                            });
-
-                            if (!attemptRes.ok) {
-                                return { ...quiz, latestAttempt: null };
-                            }
-
-                            const attemptData = await attemptRes.json();
-                            return {
-                                ...quiz,
-                                latestAttempt: attemptData
-                            };
-                        } catch (err) {
-                            console.error('Error fetching latest attempt', err);
-                            return { ...quiz, latestAttempt: null };
-                        }
-                    })
-                );
-
-                setQuizzes(quizzesWithAttempts);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchQuizzesWithAttempts();
-    }, []);
-
-    const renderQuizStatus = (quiz) => {
-        const attempt = quiz.latestAttempt;
-
-        if (attempt?.submitted && attempt?.score >= 90) {
-            return <span className="badge bg-success">🎉 Đã đạt</span>;
-        }
-
-        if (attempt && !attempt.submitted) {
-            return (
-                <Link
-                    to={`/user/do-quiz/${quiz._id}`}
-                    className="btn btn-warning d-flex align-items-center"
-                >
-                    <FaPlay className="me-2" /> Tiếp tục
-                </Link>
-            );
-        }
-
-        return (
-            <Link
-                to={`/user/do-quiz/${quiz._id}`}
-                className="btn btn-primary d-flex align-items-center"
-            >
-                <FaPlay className="me-2" /> Làm bài
-            </Link>
+          })
         );
+
+        setQuizzes(quizzesWithAttempts);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    return (
-        <div className="container my-5">
-            <h1 className="text-center text-primary mb-4">📚 Các bài quiz được giao</h1>
+    fetchQuizzesWithAttempts();
+  }, []);
 
-            {loading ? (
-                <p className="text-center text-muted">Đang tải dữ liệu...</p>
-            ) : Array.isArray(quizzes) && quizzes.length === 0 ? (
-                <p className="text-center text-secondary">Không có bài quiz nào được giao.</p>
-            ) : (
-                <div className="row">
-                    {quizzes.map((quiz) => (
-                        <div key={quiz._id} className="col-md-4 mb-4">
-                            <div className="card h-100 shadow-sm">
-                                <div className="card-body">
-                                    <h5 className="card-title text-primary">{quiz.title}</h5>
-                                    <p className="card-text">{quiz.description || 'Không có mô tả.'}</p>
-                                    {renderQuizStatus(quiz)}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
+  const columns = [
+    {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+      render: (text) => <strong>{text}</strong>,
+    },
+    {
+      title: 'Attempts',
+      dataIndex: 'attemptsCount',
+      key: 'attemptsCount',
+      render: (count) => count ?? 0,
+    },
+    {
+      title: 'Best Score',
+      key: 'bestScore',
+      render: (_, quiz) => {
+        const score = quiz.latestAttempt?.score;
+        return score != null ? `${score}%` : 'N/A';
+      },
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      render: (_, quiz) => {
+        const attempt = quiz.latestAttempt;
+
+        if (!attempt) return <Tag color="blue">Not Started</Tag>;
+        if (!attempt.submitted) return <Tag color="orange">In Progress</Tag>;
+        if (attempt.score >= 90) return <Tag color="green">✅ Done</Tag>;
+        return <Tag color="red">Submitted</Tag>;
+      },
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      render: (_, quiz) => {
+        const attempt = quiz.latestAttempt;
+        const label = attempt && !attempt.submitted ? 'Continue' : 'Start';
+        const type = attempt && !attempt.submitted ? 'default' : 'primary';
+
+        return (
+          <Link to={`/user/do-quiz/${quiz._id}`}>
+            <Button icon={<PlayCircleOutlined />} type={type}>
+              {label}
+            </Button>
+          </Link>
+        );
+      },
+    },
+  ];
+
+  return (
+    <div style={{ padding: 24 }}>
+      <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
+        📚 Assigned Quizzes
+      </Title>
+
+      {loading ? (
+        <Spin tip="Loading quizzes...">
+          <div style={{ height: 200 }} />
+        </Spin>
+      ) : quizzes.length === 0 ? (
+        <Empty description="No quizzes assigned." />
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={quizzes.map((quiz) => ({ ...quiz, key: quiz._id }))}
+          pagination={{ pageSize: 5 }}
+          bordered
+        />
+      )}
+    </div>
+  );
 };
 
 export default AssignedQuizzes;

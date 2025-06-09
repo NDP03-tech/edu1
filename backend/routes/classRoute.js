@@ -14,6 +14,7 @@ router.post('/:classId/add-user', classController.addUserToClass);
 router.post('/:classId/add-quiz', classController.addQuizToClass);
 
 // Lấy danh sách quiz của lớp
+router.delete('/:classId', classController.deleteClass);
 router.get('/:classId/quizzes', classController.getQuizzesOfClass);
 // Lấy danh sách học sinh của lớp
 router.get('/:classId/students', classController.getStudentsOfClass);

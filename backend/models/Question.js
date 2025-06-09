@@ -30,6 +30,7 @@ const hintWordSchema = new mongoose.Schema({
 const questionSchema = new mongoose.Schema({
   quiz_id: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Quiz' },
   question_text: { type: String, required: true },
+  readingContent: { type: String },
   points: { type: Number, default: 0 },
   explanation: { type: String },
   question_type: {

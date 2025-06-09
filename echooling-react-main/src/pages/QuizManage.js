@@ -1,16 +1,30 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import {
+  Table,
+  Button,
+  Select,
+  Spin,
+  Modal,
+  Checkbox,
+  Pagination,
+  Typography,
+  Space,
+  message
+} from "antd";
+
+const { Option } = Select;
+const { Title } = Typography;
 
 const QuizManage = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [editingQuiz, setEditingQuiz] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [categories, setCategories] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [quizzesPerPage] = useState(5);
   const [selectedQuizzes, setSelectedQuizzes] = useState([]);
+  const quizzesPerPage = 5;
   const navigate = useNavigate();
   const API_BASE = "http://localhost:5000/api/quizzes";
 
@@ -21,17 +35,19 @@ const QuizManage = () => {
       setQuizzes(res.data);
     } catch (err) {
       console.error("❌ Error fetching quizzes", err);
+      message.error("Lỗi khi tải danh sách quiz");
     } finally {
       setLoading(false);
-    } 
+    }
   };
 
   const fetchCategories = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/categories");
-      setCategories(res.data.map(c => c.name));
+      setCategories(res.data.map((c) => c.name));
     } catch (err) {
       console.error("❌ Error fetching categories", err);
+      message.error("Lỗi khi tải danh mục");
     }
   };
 
@@ -40,150 +56,156 @@ const QuizManage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn chắc chắn muốn xoá quiz này?")) return;
-    try {
-      await axios.delete(`http://localhost:5000/api/quizzes/${id}`);
-      fetchQuizzes();
-    } catch (err) {
-      console.error("❌ Error deleting quiz", err);
-    }
+    Modal.confirm({
+      title: "Xác nhận xoá quiz",
+      content: "Bạn chắc chắn muốn xoá quiz này?",
+      onOk: async () => {
+        try {
+          await axios.delete(`${API_BASE}/${id}`);
+          message.success("Đã xoá quiz thành công");
+          fetchQuizzes();
+        } catch (err) {
+          console.error("❌ Error deleting quiz", err);
+          message.error("Xoá quiz thất bại");
+        }
+      },
+    });
   };
 
   const handleBulkDelete = async () => {
-    if (selectedQuizzes.length === 0 || !window.confirm("Bạn chắc chắn muốn xoá các quiz đã chọn?")) return;
-
-    try {
-      await Promise.all(selectedQuizzes.map((id) => axios.delete(`${API_BASE}/${id}`)));
-      fetchQuizzes();
-      setSelectedQuizzes([]); // Reset danh sách đã chọn
-    } catch (err) {
-      console.error("❌ Error deleting selected quizzes", err);
-    }
+    if (selectedQuizzes.length === 0) return;
+    Modal.confirm({
+      title: "Xác nhận xoá hàng loạt",
+      content: `Bạn có chắc muốn xoá ${selectedQuizzes.length} quiz đã chọn?`,
+      onOk: async () => {
+        try {
+          await Promise.all(
+            selectedQuizzes.map((id) => axios.delete(`${API_BASE}/${id}`))
+          );
+          message.success("Đã xoá các quiz được chọn");
+          fetchQuizzes();
+          setSelectedQuizzes([]);
+        } catch (err) {
+          console.error("❌ Error deleting selected quizzes", err);
+          message.error("Xoá nhiều quiz thất bại");
+        }
+      },
+    });
   };
 
-  const handleCheckboxChange = (quizId) => {
-    setSelectedQuizzes((prev) =>
-      prev.includes(quizId) ? prev.filter(id => id !== quizId) : [...prev, quizId]
-    );
-  };
+  const filteredQuizzes = selectedCategory === "all"
+    ? quizzes
+    : quizzes.filter((quiz) => quiz.category === selectedCategory);
+
+  const indexOfLastQuiz = currentPage * quizzesPerPage;
+  const indexOfFirstQuiz = indexOfLastQuiz - quizzesPerPage;
+  const currentQuizzes = filteredQuizzes.slice(indexOfFirstQuiz, indexOfLastQuiz);
+  const totalPages = Math.ceil(filteredQuizzes.length / quizzesPerPage);
+
+  const columns = [
+    {
+      title: <Checkbox
+        checked={selectedQuizzes.length === filteredQuizzes.length}
+        onChange={(e) => {
+          setSelectedQuizzes(
+            e.target.checked ? filteredQuizzes.map((q) => q._id) : []
+          );
+        }}
+      />,
+      dataIndex: "_id",
+      render: (id) => (
+        <Checkbox
+          checked={selectedQuizzes.includes(id)}
+          onChange={() => {
+            setSelectedQuizzes((prev) =>
+              prev.includes(id) ? prev.filter((q) => q !== id) : [...prev, id]
+            );
+          }}
+        />
+      ),
+      width: 50
+    },
+    {
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
+    },
+    {
+      title: "Category",
+      dataIndex: "category",
+      key: "category",
+    },
+    {
+      title: "Action",
+      key: "actions",
+      render: (_, quiz) => (
+        <Space>
+          <Button type="primary" onClick={() => handleEdit(quiz._id)}>
+            ✏️ Edit
+          </Button>
+          <Button danger onClick={() => handleDelete(quiz._id)}>
+            🗑️ Delete
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
   useEffect(() => {
     fetchQuizzes();
     fetchCategories();
   }, []);
 
-  const filteredQuizzes = selectedCategory === "all" 
-    ? quizzes 
-    : quizzes.filter(quiz => quiz.category === selectedCategory);
-
-  // Tính toán các chỉ số phân trang
-  const indexOfLastQuiz = currentPage * quizzesPerPage;
-  const indexOfFirstQuiz = indexOfLastQuiz - quizzesPerPage;
-  const currentQuizzes = filteredQuizzes.slice(indexOfFirstQuiz, indexOfLastQuiz);
-  const totalPages = Math.ceil(filteredQuizzes.length / quizzesPerPage);
-
   return (
-    <div className="container mt-4">
-      <h3 className="mb-3">📋 Quản lý Quiz</h3>
-
-      <div className="mb-4">
-        <label>Chọn Danh Mục:</label>
-        <select
-          className="form-control"
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-        >
-          <option value="all">Tất cả</option>
-          {categories.map((cat, index) => (
-            <option key={index} value={cat}>{cat}</option>
-          ))}
-        </select>
-      </div>
-
-      <button
-        className="btn btn-danger mb-3"
-        onClick={handleBulkDelete}
-      >
-        🗑️ Xoá các quiz đã chọn
-      </button>
-
-      {loading ? (
-        <div>⏳ Đang tải danh sách...</div>
-      ) : (
-        <table className="table table-bordered">
-          <thead>
-            <tr>
-              <th>
-                <input
-                  type="checkbox"
-                  onChange={(e) => setSelectedQuizzes(e.target.checked ? filteredQuizzes.map(q => q._id) : [])}
-                  checked={selectedQuizzes.length === filteredQuizzes.length}
-                />
-              </th>
-              <th>Tiêu đề</th>
-              <th>Danh mục</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentQuizzes.map((quiz) => (
-              <tr key={quiz._id}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedQuizzes.includes(quiz._id)}
-                    onChange={() => handleCheckboxChange(quiz._id)}
-                  />
-                </td>
-                <td>{quiz.title}</td>
-                <td>{quiz.category}</td>
-                <td>
-                  <button
-                    className="btn btn-sm btn-warning me-2"
-                    onClick={() => handleEdit(quiz._id)}
-                  >
-                    ✏️ Sửa
-                  </button>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => handleDelete(quiz._id)}
-                  >
-                    🗑️ Xoá
-                  </button>
-                </td>
-              </tr>
+    <div style={{ padding: "24px", maxWidth: 1200, margin: "0 auto" }}>
+      <div className="p-6 bg-white rounded shadow">
+        <div className="mb-4">
+          <span>Select Category </span>
+          <Select
+            style={{ width: 200 }}
+            value={selectedCategory}
+            onChange={(value) => setSelectedCategory(value)}
+          >
+            <Option value="all">All</Option>
+            {categories.map((cat, index) => (
+              <Option key={index} value={cat}>{cat}</Option>
             ))}
-            {filteredQuizzes.length === 0 && (
-              <tr>
-                <td colSpan="4" className="text-center">
-                  Không có quiz nào.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      )}
-
-      {/* Phân trang */}
-      <div className="pagination">
-        <button
-          className="btn btn-secondary me-2"
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
+          </Select>
+        </div>
+  
+        <Button
+          danger
+          className="mb-4"
+          onClick={handleBulkDelete}
+          disabled={selectedQuizzes.length === 0}
         >
-          &laquo; Trước
-        </button>
-        <span>Trang {currentPage} / {totalPages}</span>
-        <button
-          className="btn btn-secondary ms-2"
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-          disabled={currentPage === totalPages}
-        >
-          Tiếp &raquo;
-        </button>
+          🗑️ Delete quizzes choose
+        </Button>
+  
+        {loading ? (
+          <Spin size="large" />
+        ) : (
+          <Table
+            rowKey="_id"
+            dataSource={currentQuizzes}
+            columns={columns}
+            pagination={false}
+          />
+        )}
+  
+        <div className="mt-4 text-center">
+          <Pagination
+            current={currentPage}
+            pageSize={quizzesPerPage}
+            total={filteredQuizzes.length}
+            onChange={(page) => setCurrentPage(page)}
+            showSizeChanger={false}
+          />
+        </div>
       </div>
     </div>
   );
+  
 };
 
 export default QuizManage;

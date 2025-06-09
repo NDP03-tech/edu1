@@ -96,8 +96,11 @@ const updateUser = async (req, res) => {
     let updatedData = { ...req.body };
 
     try {
-        // Nếu có password, hash nó trước
-        if (updatedData.password) {
+        // Nếu password không được gửi hoặc là chuỗi rỗng thì không cập nhật
+        if (!updatedData.password || updatedData.password.trim() === "") {
+            delete updatedData.password;
+        } else {
+            // Nếu có password hợp lệ thì hash
             const salt = await bcrypt.genSalt(10);
             updatedData.password = await bcrypt.hash(updatedData.password, salt);
         }
@@ -115,6 +118,7 @@ const updateUser = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 
 
 // Xóa người dùng

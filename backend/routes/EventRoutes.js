@@ -14,7 +14,7 @@ router.post('/create', authenticateToken, upload.single('image'), EventControlle
 router.get('/', EventController.getAllEvents);
 
 // Route để cập nhật sự kiện (kèm upload ảnh mới nếu cần)
-router.put('/:id', authenticateToken, upload.single('image'), EventController.updateEvent);
+router.put('/:id', authenticateToken, EventController.updateEvent);
 
 // Route để xóa sự kiện
 router.delete('/:id', authenticateToken, EventController.deleteEvent);

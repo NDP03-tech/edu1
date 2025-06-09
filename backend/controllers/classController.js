@@ -4,6 +4,19 @@ const Quiz = require('../models/Quiz');
 const mongoose = require('mongoose');
 
 // Tạo lớp mới
+exports.deleteClass = async (req, res) => {
+  try {
+    const deletedClass = await Class.findByIdAndDelete(req.params.classId);
+    if (!deletedClass) {
+      return res.status(404).json({ message: 'Class not found' });
+    }
+    res.status(200).json({ message: 'Class deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting class:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 
 exports.getAllClasses = async (req, res) => {
   try {
@@ -120,17 +133,22 @@ exports.addStudentsToClass = async (req, res) => {
 
   try {
     const classDoc = await Class.findById(classId);
-    if (!classDoc) return res.status(404).json({ message: 'Class not found' });
+    if (!classDoc) {
+      return res.status(404).json({ message: 'Class not found' });
+    }
 
-    classDoc.students.push(...studentIds);
-    await classDoc.save();
+    // Dùng $addToSet để đảm bảo không thêm trùng sinh viên
+    await Class.findByIdAndUpdate(classId, {
+      $addToSet: { students: { $each: studentIds } }
+    });
 
     res.status(200).json({ message: 'Students added successfully' });
   } catch (err) {
-    console.error(err);
+    console.error('Error adding students to class:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 exports.moveStudents = async (req, res) => {
   const { studentIds, fromClassId, toClassId } = req.body;
 

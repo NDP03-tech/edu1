@@ -57,16 +57,16 @@ const BlogMain = () => {
                             <div className="single-blog h-100 shadow-effect">
                                 <div className="inner-blog d-flex flex-column h-100">
                                     <div className="blog-img">
-                                        <Link to={`/blog/${data.id}`} className="cate">{data.category}</Link>
+                                        <Link to={`/blog/${data._id}`} className="cate">{data.category}</Link>
                                         <img src={data.image} alt={data.title} className="img-fluid" />
                                     </div>
                                     <div className="blog-content mt-auto p-3 rounded shadow-sm">
                                         <h3 className="blog-title text-center mb-3">
-                                            <Link to={`/blog/${data.id}`} className="text-decoration-none text-dark">{data.title}</Link>
+                                            <Link to={`/blog/${data._id}`} className="text-decoration-none text-dark">{data.title}</Link>
                                         </h3>
                                         <p className="blog-desc mb-3">{data.description}</p>
                                         <div className="d-flex justify-content-center mb-3">
-                                            <Link to={`/blog/${data.id}`} className="blog-btn btn btn-primary">Read More</Link>
+                                            <Link to={`/blog/${data._id}`} className="blog-btn btn btn-primary">Read More</Link>
                                         </div>
                                         <ul className="top-part list-unstyled d-flex justify-content-between align-items-center">
                                             <li className="me-3">

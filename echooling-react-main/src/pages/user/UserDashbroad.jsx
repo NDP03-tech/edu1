@@ -1,59 +1,95 @@
 import React, { useEffect, useState } from 'react';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
-import { addDays, subDays, format } from 'date-fns';
+import { subDays } from 'date-fns';
 import UserHeader from '../../components/User/userHeader';
 
 const UserDashboard = () => {
-    const [activityData, setActivityData] = useState([]);
+  const [activityData, setActivityData] = useState([]);
 
-    useEffect(() => {
-        // Gọi API lấy dữ liệu bài làm theo ngày
-        const fetchData = async () => {
-            try {
-                const res = await fetch('/api/user/quiz-activity'); // Trả về [{ date: '2025-05-01', count: 1 }, ...]
-                const data = await res.json();
-                setActivityData(data);
-            } catch (err) {
-                console.error(err);
-            }
-        };
+  const fetchQuizzesWithLatestAttempts = async (userId, token) => {
+    const res = await fetch(`http://localhost:5000/api/${userId}/quizzes`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-        fetchData();
-    }, []);
+    const quizzes = await res.json();
 
-    return (
-        <div>
-            <UserHeader />
-            <div className="p-6">
-                <h2 className="text-2xl font-semibold mb-4">🎯 Bảng điều khiển hoạt động</h2>
-                <p className="mb-4 text-gray-600">Lịch sử làm bài của bạn trong năm qua:</p>
-                <div className="bg-white p-4 rounded shadow max-w-4xl mx-auto">
-                    <CalendarHeatmap
-                        startDate={subDays(new Date(), 365)}
-                        endDate={new Date()}
-                        values={activityData}
-                        classForValue={(value) => {
-                            if (!value) {
-                                return 'color-empty';
-                            }
-                            if (value.count >= 3) return 'color-github-4';
-                            if (value.count === 2) return 'color-github-3';
-                            if (value.count === 1) return 'color-github-2';
-                            return 'color-github-1';
-                        }}
-                        tooltipDataAttrs={(value) => {
-                            if (!value || !value.date) return null;
-                            return {
-                                'data-tip': `${value.date}: ${value.count} bài đã làm`
-                            };
-                        }}
-                        showWeekdayLabels
-                    />
-                </div>
-            </div>
-        </div>
+    const enriched = await Promise.all(
+      quizzes.map(async (quiz) => {
+        const attemptRes = await fetch(`http://localhost:5000/api/results/latest/${quiz._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const latestAttempt = await attemptRes.json();
+        return { ...quiz, latestAttempt };
+      })
     );
+
+    return enriched;
+  };
+
+  const convertToHeatmapData = (quizAttempts) => {
+    const dateMap = {};
+    quizAttempts.forEach(({ latestAttempt }) => {
+      if (latestAttempt?.submittedAt) {
+        const date = latestAttempt.submittedAt.split('T')[0];
+        dateMap[date] = (dateMap[date] || 0) + 1;
+      }
+    });
+
+    return Object.entries(dateMap).map(([date, count]) => ({ date, count }));
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+        const user = JSON.parse(userStr);
+        const userId = user._id || user.id;
+
+        const combined = await fetchQuizzesWithLatestAttempts(userId, token);
+        const data = convertToHeatmapData(combined);
+        setActivityData(data);
+      } catch (err) {
+        console.error('Lỗi khi lấy dữ liệu heatmap:', err);
+      }
+    };
+
+    init();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <UserHeader />
+      <main className="max-w-screen-xl mx-auto p-4">
+        <h2 className="text-xl sm:text-2xl font-semibold mb-4">🎯 Bảng điều khiển hoạt động</h2>
+        <p className="mb-4 text-gray-600">Lịch sử làm bài của bạn trong 1 năm gần đây:</p>
+
+        <div className="bg-white p-4 rounded shadow w-full overflow-x-auto">
+          <div className="scale-[0.8] sm:scale-100 origin-top-left">
+            <CalendarHeatmap
+              startDate={subDays(new Date(), 365)}
+              endDate={new Date()}
+              values={activityData}
+              classForValue={(value) => {
+                if (!value) return 'color-empty';
+                if (value.count >= 3) return 'color-github-4';
+                if (value.count === 2) return 'color-github-3';
+                if (value.count === 1) return 'color-github-2';
+                return 'color-github-1';
+              }}
+              tooltipDataAttrs={(value) =>
+                value && value.date
+                  ? { 'data-tip': `${value.date}: ${value.count} bài đã làm` }
+                  : null
+              }
+              showWeekdayLabels
+            />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 };
 
 export default UserDashboard;

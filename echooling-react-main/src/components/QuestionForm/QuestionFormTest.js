@@ -37,7 +37,7 @@ const QuestionFormTest = ({
           const res = await Axios.get(`http://localhost:5000/api/questions/${questionData._id}`);
           setFromData(res.data);
         } catch (err) {
-          console.error('❌ Lỗi khi fetch câu hỏi:', err);
+          console.error('❌ Error fetching question:', err);
         }
       } else {
         setFromData(questionData);
@@ -58,7 +58,6 @@ const QuestionFormTest = ({
     setPoints(data.points || 0);
     setHintWords(data.hintWords || data.hint_words || []);
   };
-  
 
   const handleFocus = () => {
     if (points === 0) setPoints('');
@@ -82,26 +81,43 @@ const QuestionFormTest = ({
     };
     setGaps((prev) => [...prev, newGap]);
   };
+
+  const handleCreateMultipleGap = (selectedText, startPosition) => {
+    const answers = selectedText
+      .split('#')
+      .map(ans => ans.trim())
+      .filter(Boolean);
+
+    if (answers.length < 2) {
+      alert("Multiple gap must contain at least 2 answers, separated by #");
+      return;
+    }
+
+    const newGap = {
+      correct_answers: answers,
+      position: startPosition,
+      length: selectedText.length,
+    };
+    setGaps((prev) => [...prev, newGap]);
+  };
+
   const handleDeleteGap = (deletedText) => {
     setGaps((prevGaps) => {
       const newGaps = prevGaps.filter(
         (gap) => !gap.correct_answers.includes(deletedText)
       );
-      console.log("🔁 Gaps sau khi xoá:", newGaps);
+      console.log("🔁 Gaps after deletion:", newGaps);
       return newGaps;
     });
   };
-  
+
   const handleAddHint = (word, hint) => {
-    // Nếu muốn kiểm tra trùng, có thể dùng logic thêm ở đây
     setHintWords(prev => [...prev, { word, hint }]);
   };
 
   const handleCreateDropdown = (dropdownData) => {
-    setDropdowns(prev => [...prev, dropdownData]);  // thêm dropdown mới vào danh sách
+    setDropdowns(prev => [...prev, dropdownData]);
   };
-
- 
 
   const handleCreateQuestion = async () => {
     const newQuestion = {
@@ -119,34 +135,13 @@ const QuestionFormTest = ({
 
     try {
       const response = await Axios.post('http://localhost:5000/api/questions', newQuestion);
-      alert('✅ Câu hỏi đã được thêm');
+      alert('✅ Question created successfully');
       setQuestionId(response.data._id);
     } catch (error) {
-      console.error('❌ Lỗi khi tạo câu hỏi:', error);
-      alert('❌ Tạo câu hỏi thất bại.');
+      console.error('❌ Failed to create question:', error);
+      alert('❌ Failed to create question.');
     }
   };
-
-  const handleCreateMultipleGap = (selectedText, startPosition) => {
-    const answers = selectedText
-      .split('#')
-      .map(ans => ans.trim())
-      .filter(Boolean);
-  
-    if (answers.length < 2) {
-      alert("Multiple gap phải có ít nhất 2 đáp án, ngăn cách bằng dấu #");
-      return;
-    }
-  
-    const newGap = {
-      correct_answers: answers,
-      position: startPosition,
-      length: selectedText.length,
-      // hiển thị đáp án đầu tiên
-    };
-    setGaps((prev) => [...prev, newGap]);
-  };
-  
 
   const handleUpdateQuestion = async () => {
     const updatedData = {
@@ -161,15 +156,15 @@ const QuestionFormTest = ({
       quiz_id: quizId,
       ...(questionType === 'checkboxes' || questionType === 'multiple-choice' ? { options } : {}),
     };
-    console.log("📤 Updating question with:", updatedData); // ✅ CHÈN Ở ĐÂY
+    console.log("📤 Updating question with:", updatedData);
 
     try {
       await Axios.put(`http://localhost:5000/api/questions/${questionId}`, updatedData);
-      alert('✅ Cập nhật câu hỏi thành công');
+      alert('✅ Question updated successfully');
       onFinishEdit?.({ ...updatedData, _id: questionId });
     } catch (error) {
-      console.error('❌ Lỗi khi cập nhật câu hỏi:', error);
-      alert('❌ Cập nhật thất bại.');
+      console.error('❌ Failed to update question:', error);
+      alert('❌ Update failed.');
     }
   };
 
@@ -181,13 +176,13 @@ const QuestionFormTest = ({
           className="btn-close position-absolute top-0 end-0 m-2"
           aria-label="Close"
           onClick={() => {
-            if (window.confirm('Bạn có chắc muốn xoá câu hỏi này?')) {
+            if (window.confirm('Are you sure you want to delete this question?')) {
               onDelete?.(questionIndex, questionId);
             }
           }}
         ></button>
 
-        <h5 className="mb-3">Câu {questionIndex + 1}</h5>
+        <h5 className="mb-3">Question {questionIndex + 1}</h5>
 
         <div className="d-flex align-items-end justify-content-between mb-3 flex-wrap gap-3">
           <div>
@@ -212,67 +207,64 @@ const QuestionFormTest = ({
         </div>
 
         {questionType === 'reading' ? (
-  <ReadingTaskEditor
-    readingContent={readingContent}
-    setReadingContent={setReadingContent}
-    questionText={questionText}
-    setQuestionText={setQuestionText}
-    onCreateGap={handleCreateGap}
-    onCreateDropdown={handleCreateDropdown}
-    onFocus={handleEditorFocus}
-  />
-) : (
-  <>
-    <div>
-      <label className="form-label fw-bold">📝 Câu hỏi</label>
-      <RichTextEditor
-        key={questionData?._id || 'new'}
-        value={questionText}
-        onChange={setQuestionText}
-        onDeleteGap={handleDeleteGap}
-        onCreateMultipleGap={handleCreateMultipleGap}
-        onCreateGap={handleCreateGap}
-        onAddHint={handleAddHint}
-        onCreateDropdown={handleCreateDropdown}
-        onFocus={handleEditorFocus}
-      />
-    </div>
+          <ReadingTaskEditor
+            readingContent={readingContent}
+            setReadingContent={setReadingContent}
+            questionText={questionText}
+            setQuestionText={setQuestionText}
+            onCreateGap={handleCreateGap}
+            onCreateDropdown={handleCreateDropdown}
+            onFocus={handleEditorFocus}
+          />
+        ) : (
+          <>
+            <div>
+              <label className="form-label fw-bold">📝 Question:</label>
+              <RichTextEditor
+                key={questionData?._id || 'new'}
+                value={questionText}
+                onChange={setQuestionText}
+                onDeleteGap={handleDeleteGap}
+                onCreateMultipleGap={handleCreateMultipleGap}
+                onCreateGap={handleCreateGap}
+                onAddHint={handleAddHint}
+                onCreateDropdown={handleCreateDropdown}
+                onFocus={handleEditorFocus}
+              />
+            </div>
 
-    {/* Hiển thị phần tùy chọn cho multiple-choice */}
-    {questionType === 'multiple-choice' && (
-      <MultipleChoiceEditor
-      questionText={questionText}
-       setQuestionText={setQuestionText}
-        options={options}
-        setOptions={setOptions}
-      />
-    )}
+            {questionType === 'multiple-choice' && (
+              <MultipleChoiceEditor
+                questionText={questionText}
+                setQuestionText={setQuestionText}
+                options={options}
+                setOptions={setOptions}
+              />
+            )}
 
-    {/* Nếu có loại checkbox */}
-    {questionType === 'checkboxes' && (
-      <CheckboxesEditor
-        options={options}
-        setOptions={setOptions}
-      />
-    )}
-  </>
-)}
-
+            {questionType === 'checkboxes' && (
+              <CheckboxesEditor
+                options={options}
+                setOptions={setOptions}
+              />
+            )}
+          </>
+        )}
 
         <div className="mt-4">
-          <label className="form-label">🧠 Giải thích:</label>
+          <label className="form-label">🧠 Explanation:</label>
           <ExplanationEditor value={explanation} onChange={setExplanation} />
         </div>
 
         <div className="d-flex gap-2 mt-3">
           {!questionId && (
             <button onClick={handleCreateQuestion} className="btn btn-success">
-              ✅ Lưu câu hỏi
+              ✅ Save Question
             </button>
           )}
           {questionId && (
             <button onClick={handleUpdateQuestion} className="btn btn-warning">
-              🔄 Cập nhật câu hỏi
+              🔄 Update Question
             </button>
           )}
         </div>

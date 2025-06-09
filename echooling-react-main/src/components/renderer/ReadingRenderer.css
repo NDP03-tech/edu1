@@ -1,19 +1,112 @@
-/* Đảm bảo các cột có chiều cao và chiều rộng cố định */
-.scrollable-content {
-    max-height: 400px; /* Bạn có thể thay đổi chiều cao này tùy ý */
-    overflow-y: auto; /* Cuộn dọc khi nội dung quá dài */
-    overflow-x: hidden; /* Không cuộn ngang */
-    padding: 10px; /* Để có khoảng cách bên trong */
-    font-size: 14px; /* Điều chỉnh font size nếu cần */
-  }
-  
-  /* Cột bên trái và bên phải có chiều rộng 50% mỗi cột */
-  table.table-bordered th, table.table-bordered td {
-    vertical-align: top; /* Đảm bảo nội dung căn lề trên cùng */
-  }
-  
-  table.table-bordered {
-    width: 100%;
-    table-layout: fixed; /* Đảm bảo mỗi cột có chiều rộng cố định */
-  }
-  
+.scrollable-left,
+.scrollable-right {
+  max-height: 700px; /* giới hạn chiều cao */
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.scrollable-left {
+  min-width: 100%;
+}
+
+.scrollable-right {
+  min-width: 100%;
+}
+
+.gap-input,
+.gap-dropdown {
+  display: inline-block;
+  width: auto;
+  min-width: 40px;
+  max-width: 130px;
+  font-size: 14px;
+  padding: 2px 6px 5px;
+  line-height: 1.2;
+  vertical-align: middle;
+  margin: 0 4px;
+  border-radius: 4px;
+  height: auto;
+}
+
+/* Optional: shrink padding/borders more if needed */
+.gap-input {
+  height: 28px;
+}
+
+.gap-dropdown {
+  height: 30px;
+}
+/* Ghi đè style Bootstrap cho cột câu hỏi */
+.scrollable-right {
+  text-align: left !important;
+  vertical-align: top !important;
+}
+
+.scrollable-left {
+  text-align: left !important;
+  vertical-align: top !important;
+}
+.reading-table-header {
+  background-color: #00306E;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 12px;
+  text-align: center;
+}
+
+.scrollable-left,
+.scrollable-right {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+/* Scrollbar styling (modern browsers) */
+.scrollable-left::-webkit-scrollbar,
+.scrollable-right::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollable-left::-webkit-scrollbar-thumb,
+.scrollable-right::-webkit-scrollbar-thumb {
+  background-color: #00306E;
+  border-radius: 4px;
+}
+
+.scrollable-left::-webkit-scrollbar-track,
+.scrollable-right::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* Firefox scrollbar */
+.scrollable-left,
+.scrollable-right {
+  scrollbar-width: thin;
+  scrollbar-color: #00306E #f1f1f1;
+}
+.scrollable-left .rendered-question,
+.scrollable-right .rendered-question {
+  font-size: 21px;
+  font-family: "Source Sans Pro", sans-serif;
+  color: #000000;
+}
+
+
+.scrollable-left .rendered-question h1,
+.scrollable-left .rendered-question h2,
+.scrollable-left .rendered-question h3,
+.scrollable-left .rendered-question h4,
+.scrollable-left .rendered-question h5 {
+  font-size: inherit;
+  font-weight: 600;
+  color: #000000;
+  color: inherit;
+}
+
+.scrollable-left {
+  font-size: 21px;
+  font-family: "Source Sans Pro", sans-serif;
+  color: #000000;
+}

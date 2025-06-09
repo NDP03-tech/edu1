@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { TableOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Table,
@@ -17,6 +18,9 @@ import {
 const { Title } = Typography;
 
 const ClassDetail = () => {
+  const handleViewGrades = (userId) => {
+    navigate(`/admin/grades/${userId}`);
+  };
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -70,6 +74,7 @@ const ClassDetail = () => {
 
   const handleDelete = async (studentId) => {
     try {
+      const token = localStorage.getItem("token")
       await axios.delete(`http://localhost:5000/api/users/${studentId}`);
       notification.success({ message: 'Student deleted' });
       fetchClassDetails();
@@ -169,7 +174,11 @@ const ClassDetail = () => {
       render: (_, record) => (
         <Space>
           <Button type="link" onClick={() => handleEdit(record)}>Edit</Button>
-          <Button type="link" danger onClick={() => handleDelete(record._id)}>Delete</Button>
+          <TableOutlined
+  style={{ fontSize: '18px', color: '#1890ff', cursor: 'pointer' }}
+  onClick={() => handleViewGrades(record._id)}
+  title="View Grades"
+/>
         </Space>
       ),
     },

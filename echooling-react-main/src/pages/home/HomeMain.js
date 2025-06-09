@@ -10,13 +10,14 @@ import Counter from './CounterSection';
 
 import ScrollToTop from '../../components/ScrollTop';
 import MenuItems from '../../components/Header/MenuItems';
+import Header from '../../components/Header';
 const HomeMain =() => {
 		return (
 			<>
 
 				<div className="react-wrapper">
             		<div className="react-wrapper-inner">
-						<MenuItems/>
+					<Header/>
 					<HomeSlider />
 						<About />
 

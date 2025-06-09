@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const BlogMain = (props) => {
-    const { postTitle, postImg, postContent } = props;
-
+const BlogMain = ({ postTitle, postImg, postContent, currentPostId }) => {
     const [relatedPosts, setRelatedPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -16,7 +14,8 @@ const BlogMain = (props) => {
                     throw new Error('Không thể tải dữ liệu bài viết');
                 }
                 const data = await response.json();
-                setRelatedPosts(data);
+                const filtered = data.filter(post => post._id !== currentPostId); // Loại trừ bài hiện tại
+                setRelatedPosts(filtered.slice(0, 3)); // Hiển thị 3 bài liên quan
             } catch (error) {
                 console.error("Lỗi API:", error.message);
                 setError(error.message);
@@ -26,7 +25,7 @@ const BlogMain = (props) => {
         };
 
         fetchRelatedPosts();
-    }, []);
+    }, [currentPostId]);
 
     if (loading) return <div>⏳ Đang tải...</div>;
     if (error) return <div style={{ color: 'red' }}>❌ Lỗi: {error}</div>;
@@ -42,23 +41,26 @@ const BlogMain = (props) => {
                                     <img 
                                         src={postImg} 
                                         alt={postTitle} 
-                                        style={{ 
-                                            width: '100%', 
-                                            height: 'auto', 
-                                            objectFit: 'cover' 
-                                        }} 
+                                        style={{ width: '100%', height: 'auto', objectFit: 'cover' }} 
                                     />
                                 </div>
 
                                 <p dangerouslySetInnerHTML={{ __html: postContent.replace(/\n/g, '<br />') }}></p>
-                                <a href="https://goo.gl/xahbn4" target="_blank" rel="noopener noreferrer">Link đăng ký nhập học : https://goo.gl/xahbn4</a>
+
+                                <a href="https://goo.gl/xahbn4" target="_blank" rel="noopener noreferrer">
+                                    Link đăng ký nhập học : https://goo.gl/xahbn4
+                                </a>
+
                                 <div className="blog-tags">
                                     <div className="row align-items-center">
                                         <div className="col-md-2">
                                             <div className="share-course">
                                                 Share this post:
                                                 <em>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-share-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                                                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
+                                                        className="feather feather-share-2">
                                                         <circle cx="18" cy="5" r="3"></circle>
                                                         <circle cx="6" cy="12" r="3"></circle>
                                                         <circle cx="18" cy="19" r="3"></circle>
@@ -74,6 +76,7 @@ const BlogMain = (props) => {
                                         </div>
                                     </div>
                                 </div>
+
                                 <div className="single-nav">
                                     <div className="back-prev">
                                         <Link to="#"><i className="back-icon arrow_carrot-left"></i> PREV POST <em>Graduate Admissions</em></Link>
@@ -86,29 +89,30 @@ const BlogMain = (props) => {
                                 <div className="react-course-filter related__course">
                                     <h3>Related Posts</h3>
                                     <div className="row">
-                                        {relatedPosts.map((data, index) => {
-                                            return (
-                                                <div key={index} className="single-studies col-md-4 grid-item">
-                                                    <div className="inner-course">
-                                                        <div className="case-img">
-                                                            <Link to="#" className="cate-w">{data.publishedDate}</Link>
-                                                            <img src={data.image} alt={data.title} />
-                                                        </div>
-                                                        <div className="case-content">
-                                                            <em className="cate-camp">{data.category}</em>
-                                                            <h4 className="case-title">
-                                                                <Link to={`/blog/${data.id}`}>{data.title}</Link>
-                                                            </h4>
-                                                            <div className="react__user">
-                                                                <img src={data.authorImg} alt={data.author} /> {data.author}
-                                                            </div>
+                                        {relatedPosts.map((data) => (
+                                            <div key={data._id} className="single-studies col-md-4 grid-item">
+                                                <div className="inner-course">
+                                                    <div className="case-img">
+                                                        <Link to="#" className="cate-w">
+                                                            {new Date(data.createdAt).toLocaleDateString('vi-VN')}
+                                                        </Link>
+                                                        <img src={data.image} alt={data.title} />
+                                                    </div>
+                                                    <div className="case-content">
+                                                        <em className="cate-camp">{data.category}</em>
+                                                        <h4 className="case-title">
+                                                            <Link to={`/blog/${data._id}`}>{data.title}</Link>
+                                                        </h4>
+                                                        <div className="react__user">
+                                                            <img src={data.authorImg} alt={data.author} /> {data.author}
                                                         </div>
                                                     </div>
                                                 </div>
-                                            )
-                                        }).slice(0, 3)} {/* Chỉ hiển thị 3 bài viết liên quan */}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -116,6 +120,6 @@ const BlogMain = (props) => {
             </div>
         </div>
     );
-}
+};
 
 export default BlogMain;

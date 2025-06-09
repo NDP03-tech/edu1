@@ -29,12 +29,15 @@ const GeneratedDropdownRenderer = ({
 
   // Khi question hoặc initialAnswer thay đổi thì cập nhật state
   useEffect(() => {
+
+    console.log("⏬ initialAnswer:", initialAnswer)
     if (initialAnswer && typeof initialAnswer === "object") {
-      setSelectedAnswers(initialAnswer);
+      setSelectedAnswers({ ...initialAnswer });
     } else {
       setSelectedAnswers({});
     }
-  }, [question._id, JSON.stringify(initialAnswer)]);
+  }, [question._id, initialAnswer]);
+  
 
   const handleSelectChange = (gapIndex, value) => {
     const updated = {

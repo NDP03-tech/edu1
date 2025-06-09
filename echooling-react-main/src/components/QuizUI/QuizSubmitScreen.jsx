@@ -1,19 +1,32 @@
 import React from "react";
+import { Card, Typography, Result } from "antd";
+
+const { Title, Paragraph, Text } = Typography;
 
 const QuizSubmitScreen = ({ score, message }) => {
   return (
-    <div className="p-4 max-w-xl mx-auto text-center">
-      <h2 className="text-2xl font-bold mb-4">Quiz Complete!</h2>
-      <div
-  className="text-lg mb-4"
-  dangerouslySetInnerHTML={{ __html: message }}
-/>
-
-      {score !== null && (
-        <div className="text-xl font-semibold text-green-600">
-          Your Score: {score}
-        </div>
-      )}
+    <div style={{ maxWidth: 700, margin: "40px auto", padding: "16px" }}>
+      <Card
+        bordered
+        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+      >
+        <Result
+          status="success"
+          title={<Title level={3}> Quiz Complete!</Title>}
+          subTitle={
+            <div style={{ marginTop: 16 }}>
+              <Paragraph>
+                <div dangerouslySetInnerHTML={{ __html: message }} />
+              </Paragraph>
+              {score !== null && (
+                <Text strong style={{ fontSize: "1.25rem", color: "#52c41a" }}>
+                   Your Score: {score}%
+                </Text>
+              )}
+            </div>
+          }
+        />
+      </Card>
     </div>
   );
 };

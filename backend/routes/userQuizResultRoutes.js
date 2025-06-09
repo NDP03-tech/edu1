@@ -18,5 +18,9 @@ router.get("/latest/:quizId", authenticateToken,userQuizResultController.getLate
 // Lấy toàn bộ attempt của user với quiz
 router.get("/attempts/:quizId",authenticateToken, userQuizResultController.getAllAttempts);
 
+// routes/userQuizResultRoutes.js
+router.get('/user-summary/:userId', authenticateToken, userQuizResultController.getUserQuizSummaryByUserId);
+router.get('/best-attempts/:quizId', authenticateToken, userQuizResultController.getBestAttemptsByQuiz);
+router.get('/quiz/:quizId/best-attempts', userQuizResultController.getUsersBestAttemptsByQuiz);
 
 module.exports = router;

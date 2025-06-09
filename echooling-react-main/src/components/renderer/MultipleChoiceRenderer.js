@@ -1,29 +1,44 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const MultipleChoiceRenderer = ({
   question,
-  editable = false,
-  initialAnswer = null,
+  initialAnswer = "",
+  frozenAnswer = "",
+  showCorrectAnswer = false,
   onAnswerChange,
 }) => {
-  const [selectedOptionId, setSelectedOptionId] = useState(initialAnswer);
+  const [selectedAnswer, setSelectedAnswer] = useState(initialAnswer);
 
   useEffect(() => {
-    setSelectedOptionId(initialAnswer);
+    setSelectedAnswer(initialAnswer);
   }, [initialAnswer]);
 
-  const handleOptionChange = (optionId) => {
-    if (!editable) return;
+  const handleChange = (optionText) => {
+    setSelectedAnswer(optionText);
+    onAnswerChange?.(question._id, optionText);
+  };
 
-    setSelectedOptionId(optionId);
-    if (onAnswerChange) {
-      onAnswerChange(question._id,optionId); // Gửi option._id đã chọn ra ngoài
-    }
+  const renderIconAndStyle = (option) => {
+    const optionText = option.text?.trim();
+    const wasSubmittedAnswer = frozenAnswer?.trim?.() === optionText;
+
+    if (!showCorrectAnswer || !frozenAnswer || !wasSubmittedAnswer) return {};
+
+    const isCorrect = option.isCorrect;
+    return {
+      icon: (
+        <span style={{ marginLeft: 8, color: isCorrect ? "green" : "red" }}>
+          {isCorrect ? "✓" : "✗"}
+        </span>
+      ),
+      style: {
+        backgroundColor: isCorrect ? "#e6ffed" : "#ffe6e6",
+      },
+    };
   };
 
   return (
     <div>
-      {/* Hiển thị nội dung câu hỏi */}
       {question?.question_text && (
         <div
           className="mb-3"
@@ -31,32 +46,34 @@ const MultipleChoiceRenderer = ({
         />
       )}
 
-      {/* Danh sách các lựa chọn */}
       <div className="mt-3">
-      {question?.options?.map((option, index) => {
-  console.log("Option:", option); // ✅
+        {question?.options?.map((option, index) => {
+          const optionText = option.text?.trim();
+          const isSelected = selectedAnswer?.trim() === optionText;
+          const { icon, style } = renderIconAndStyle(option);
 
-  const optionId = option._id || option.id; // để an toàn nếu _id không có
-
-  return (
-    <div key={optionId} className="d-flex align-items-start mb-3">
-      <input
-        type="radio"
-        name={`question-${question._id || "default"}`}
-        checked={selectedOptionId === optionId}
-        onChange={() => handleOptionChange(optionId)}
-        className="me-2 mt-1"
-        style={{ width: "20px", height: "20px" }}
-        disabled={!editable}
-      />
-      <div style={{ flex: 1 }}>
-        <strong>{String.fromCharCode(97 + index)}.</strong>{" "}
-        <span dangerouslySetInnerHTML={{ __html: option.text }} />
-      </div>
-    </div>
-  );
-})}
-
+          return (
+            <div
+              key={option._id || option.id || index}
+              className="d-flex align-items-start mb-3 p-2 rounded"
+              style={style}
+            >
+              <input
+                type="radio"
+                name={`question-${question._id}`}
+                checked={isSelected}
+                onChange={() => handleChange(optionText)}
+                className="me-2 mt-1"
+                style={{ width: 20, height: 20 }}
+              />
+              <div style={{ flex: 1 }}>
+                <strong>{String.fromCharCode(97 + index)}.</strong>{" "}
+                <span dangerouslySetInnerHTML={{ __html: option.text }} />
+                {icon}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

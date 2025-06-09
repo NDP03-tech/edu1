@@ -23,7 +23,7 @@ const EventSidebarMain = () => {
                                 return (
                                     <div className="col-lg-4">
                                         <SingleEventTwo
-                                            eventID= {data.id}
+                                            eventID= {data._id}
                                             eventImg= {data.image}
                                             eventDayCount= {data.dayCount}
                                             eventDate= {data.date}
@@ -67,9 +67,9 @@ const EventSidebarMain = () => {
                                     {events.map((data, index) => {
                                         return (
                                             <li>
-                                                <Link to={`/event/${data.id}`}><span className="post-images"><img src={require(`../../assets/images/event/${data.image}`)} alt="post" /></span></Link>
+                                                <Link to={`/event/${data._id}`}><span className="post-images"><img src={require(`../../assets/images/event/${data.image}`)} alt="post" /></span></Link>
                                                 <div className="titles">                                                    
-                                                    <h4><Link to={`/event/${data.id}`}>{data.title}</Link></h4>
+                                                    <h4><Link to={`/event/${data._id}`}>{data.title}</Link></h4>
                                                     <span>{data.dayCount} {data.date}</span>
                                                 </div>
                                             </li>

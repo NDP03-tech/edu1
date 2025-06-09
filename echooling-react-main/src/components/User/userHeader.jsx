@@ -34,60 +34,8 @@ const UserHeader = () => {
     },
   ];
 
-  // Gọi 2 API và gộp dữ liệu
-  const fetchQuizzesWithLatestAttempts = async (userId, token) => {
-    const res = await fetch(`http://localhost:5000/api/${userId}/quizzes`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
 
-    const quizzes = await res.json();
-
-    const enriched = await Promise.all(
-      quizzes.map(async (quiz) => {
-        const attemptRes = await fetch(`http://localhost:5000/api/results/latest/${quiz._id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const latestAttempt = await attemptRes.json();
-        return { ...quiz, latestAttempt };
-      })
-    );
-
-    return enriched;
-  };
-
-  // Chuyển dữ liệu sang dạng heatmap
-  const convertToHeatmapData = (quizAttempts) => {
-    const dateMap = {};
-
-    quizAttempts.forEach(({ latestAttempt }) => {
-      if (latestAttempt?.submittedAt) {
-        const date = latestAttempt.submittedAt.split('T')[0]; // "YYYY-MM-DD"
-        dateMap[date] = (dateMap[date] || 0) + 1;
-      }
-    });
-
-    return Object.entries(dateMap).map(([date, count]) => ({ date, count }));
-  };
-
-  // Gọi dữ liệu ban đầu
-  useEffect(() => {
-    const init = async () => {
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
-      const user = JSON.parse(userStr);
-      const userId = user._id || user.id;
-
-      const combined = await fetchQuizzesWithLatestAttempts(userId, token);
-      const data = convertToHeatmapData(combined);
-      setHeatmapData(data);
-    };
-
-    init();
-  }, []);
-
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setMonth(endDate.getMonth() - 2); // 2 tháng gần nhất
+  
 
   return (
     <>
@@ -104,54 +52,30 @@ const UserHeader = () => {
             VestaEdu Academy
           </Title>
           <Menu
-            theme="dark"
-            mode="horizontal"
-            selectedKeys={[location.pathname]}
-            style={{
-              background: 'transparent',
-              borderBottom: 'none',
-              fontWeight: 500
-            }}
-          >
-            {navItems.map((item) => (
-              <Menu.Item key={item.to} style={{ color: 'white' }}>
-                <Link to={item.to} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {item.icon}
-                  {item.label}
-                </Link>
-              </Menu.Item>
-            ))}
-          </Menu>
+  theme="dark"
+  mode="horizontal"
+  selectedKeys={[location.pathname]}
+  style={{
+    background: 'transparent',
+    borderBottom: 'none',
+    fontWeight: 500
+  }}
+  items={navItems.map((item) => ({
+    key: item.to,
+    label: (
+      <Link to={item.to} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'white' }}>
+        {item.icon}
+        {item.label}
+      </Link>
+    )
+  }))}
+/>
+
         </div>
       </Header>
 
       {/* HIỂN THỊ HEATMAP NGAY DƯỚI HEADER */}
-      <Content style={{ padding: 24 }}>
-  <h3>Attempts in this year</h3>
-  <div style={{
-    maxWidth: 600,
-    overflowX: 'auto',
-    transform: 'scale(0.85)',
-    transformOrigin: 'top left',
-  }}>
-    <CalendarHeatmap
-      startDate={startDate}
-      endDate={endDate}
-      values={heatmapData}
-      classForValue={(value) => {
-        if (!value) return 'color-empty';
-        if (value.count >= 3) return 'color-github-4';
-        if (value.count === 2) return 'color-github-3';
-        if (value.count === 1) return 'color-github-2';
-        return 'color-github-1';
-      }}
-      tooltipDataAttrs={value => ({
-        'data-tip': value.date ? `${value.date}: ${value.count} lần làm bài` : ''
-      })}
-      showWeekdayLabels
-    />
-  </div>
-</Content>
+    
 
     </>
   );

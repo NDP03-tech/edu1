@@ -1,104 +1,133 @@
 import React, { useEffect, useRef } from 'react';
 import './ReadingRenderer.css';
 
-const ReadingRenderer = ({ question, editable = true, initialAnswer = {}, onAnswerChange }) => {
-  const containerRef = useRef(null);
+const ReadingRenderer = ({
+  question,
+  initialAnswer = {},
+  onAnswerChange,
+  frozenAnswers = {},
+  answerStatus = {},
+  showCorrectAnswer = false,
+  editable = true,
+}) => {
+  const containerRef = useRef();
 
-  // Parse và render nội dung câu hỏi với các ô điền/cloze
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const div = document.createElement('div');
-    div.innerHTML = question.question_text || '';
+    const clozes = container.querySelectorAll('a.cloze');
+    let gapIdx = 0;
+    let dropdownIdx = 0;
 
-    const clozes = div.querySelectorAll('a.cloze');
-
-    clozes.forEach((el, index) => {
+    clozes.forEach((el) => {
       const isDropdown = el.classList.contains('dropdown');
-      const answerKey = index.toString();
-      const userValue = initialAnswer?.[answerKey] || '';
+      const index = isDropdown ? dropdownIdx : gapIdx;
+      const value = showCorrectAnswer
+        ? frozenAnswers?.[index] ?? ''
+        : initialAnswer?.[index] ?? '';
 
+      const style = {};
+      if (showCorrectAnswer) {
+        if (answerStatus[index] === true) {
+          style.backgroundColor = '#d4edda';
+          style.border = '1px solid #28a745';
+        } else if (answerStatus[index] === false) {
+          style.backgroundColor = '#f8d7da';
+          style.border = '1px solid #dc3545';
+        }
+      }
+
+      const onChange = (e) => {
+        const newVal = e.target.value;
+        onAnswerChange?.(question._id, {
+          ...(initialAnswer || {}),
+          [index]: newVal,
+        });
+      };
+
+      let inputEl;
       if (isDropdown) {
-        const correctAnswer = el.dataset.answer;
-        const options = JSON.parse(el.dataset.options || '[]');
+        const options = question.dropdowns?.[dropdownIdx]?.options || [];
+        inputEl = document.createElement('select');
+        inputEl.className = 'form-select d-inline-block gap-dropdown';
+        inputEl.style.padding = '4px 8px';
+        inputEl.disabled = !editable;
 
-        const select = document.createElement('select');
-        select.className = 'form-select d-inline-block gap-dropdown';
-        select.style.width = 'auto';
-        select.style.margin = '0 4px';
-        select.style.padding = '4px 8px';
-        select.style.fontSize = '14px';
-
-        const placeholder = document.createElement('option');
-        placeholder.textContent = '-- Chọn --';
-        placeholder.disabled = true;
-        placeholder.hidden = true;
-        placeholder.value = '';
-        select.appendChild(placeholder);
+        const defaultOption = document.createElement('option');
+        defaultOption.text = '-- Select --';
+        defaultOption.disabled = true;
+        defaultOption.hidden = true;
+        defaultOption.value = '';
+        inputEl.appendChild(defaultOption);
 
         options.forEach((opt) => {
           const option = document.createElement('option');
           option.value = opt;
-          option.textContent = opt;
-          select.appendChild(option);
+          option.text = opt;
+          inputEl.appendChild(option);
         });
 
-        select.value = userValue || '';
-        select.disabled = !editable;
-
-        // Lưu thay đổi khi chọn
-        select.onchange = (e) => {
-          const updated = { ...initialAnswer, [answerKey]: e.target.value };
-          onAnswerChange && onAnswerChange(updated);
-        };
-
-        el.replaceWith(select);
+        inputEl.value = value;
+        inputEl.onchange = onChange;
+        dropdownIdx++;
       } else {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.setAttribute('data-answer', el.textContent.trim());
-        input.className = 'form-control d-inline-block gap-input';
-        input.placeholder = '';
-        input.style.width = 'auto';
-        input.style.minWidth = '30px';
-        input.style.margin = '0 4px';
-        input.style.padding = '4px 8px';
-        input.style.fontSize = '14px';
-        input.style.display = 'inline-block';
-        input.value = userValue || '';
-        input.disabled = !editable;
-
-        input.oninput = (e) => {
-          const updated = { ...initialAnswer, [answerKey]: e.target.value };
-          onAnswerChange && onAnswerChange(updated);
-        };
-
-        el.replaceWith(input);
+        inputEl = document.createElement('input');
+        inputEl.type = 'text';
+        inputEl.className = 'form-control d-inline-block gap-input';
+        inputEl.style.minWidth = '30px';
+        inputEl.style.padding = '4px 8px';
+        inputEl.disabled = !editable;
+        inputEl.value = value;
+        inputEl.oninput = onChange;
+        gapIdx++;
       }
-    });
 
-    container.innerHTML = '';
-    container.appendChild(div);
-  }, [question.question_text, initialAnswer, editable, onAnswerChange]);
+      Object.assign(inputEl.style, style);
+      el.replaceWith(inputEl);
+    });
+  }, [
+    question?._id,
+    question.question_text,
+    question.dropdowns,
+    initialAnswer,
+    frozenAnswers,
+    answerStatus,
+    showCorrectAnswer,
+    editable,
+    onAnswerChange,
+  ]);
 
   return (
-    <div className="container my-4">
-      <h5 className="mb-3">🧠 Reading Task</h5>
+    <div style={{ padding: '1px', maxWidth: '1800px', margin: '0 auto' }}>
       <table className="table table-bordered">
         <thead>
-          <tr className="table-light">
-            <th style={{ width: '50%' }}>📘 Reading Passage</th>
-            <th style={{ width: '50%' }}>📝 Question</th>
+          <tr>
+            <th className="reading-table-header" style={{ width: '60%' }}>
+            
+            </th>
+            <th className="reading-table-header" style={{ width: '40%' }}>
+             
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td
-              dangerouslySetInnerHTML={{ __html: question.readingContent || '' }}
-              className="scrollable-content"
-            />
-            <td ref={containerRef} className="scrollable-content" />
+            <td>
+              <div
+                className="scrollable-left"
+                dangerouslySetInnerHTML={{ __html: question.readingContent }}
+              />
+            </td>
+            <td>
+              <div className="scrollable-right">
+                <div
+                  ref={containerRef}
+                  className="rendered-question"
+                  dangerouslySetInnerHTML={{ __html: question.question_text }}
+                />
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>

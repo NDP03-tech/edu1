@@ -9,7 +9,7 @@ import HomeMain from '/Users/nguyendacphuc/Downloads/edu/edu1/echooling-react-ma
 import About from '../pages/about';
 import AssignedQuizzes from "../pages/user/AssignedQuizzes";
 import Course from '../pages/course';
-import Dashbroad from "../pages/admin"; // Đảm bảo rằng Dashbroad được định nghĩa đúng
+import Dashbroad from "../pages/admin";
 import CourseDetails from '../pages/course/course-details';
 import Instructor from '../pages/instructor';
 import InstructorDetails from '../pages/instructor/instructor-details';
@@ -29,7 +29,7 @@ import UserTestComponent from '../pages/baitest/UserTestComponent';
 import AdminBlog from "../pages/Admin2/Blog";
 import AdminEvent from "../pages/Admin2/Event";
 import QuizManage from "../pages/QuizManage";
-import Classes from "/Users/nguyendacphuc/Downloads/edu/edu1/echooling-react-main/src/pages/Classes.js"
+import Classes from "/Users/nguyendacphuc/Downloads/edu/edu1/echooling-react-main/src/pages/Classes.js";
 import QuizPreview from "/Users/nguyendacphuc/Downloads/edu/edu1/echooling-react-main/src/components/QuizPreview.js";
 import EditQuiz from "../pages/EditQuiz";
 import QuizBuilder from "/Users/nguyendacphuc/Downloads/edu/edu1/echooling-react-main/src/components/QuizBuilder.jsx";
@@ -37,28 +37,48 @@ import CategoryPage from "../pages/CategoryPage";
 import ClassDetail from "../pages/ClassDetails";
 import AdminRoute from '../components/ProtectedRoute/AdminRoute';
 import UserRoute from '../components/ProtectedRoute/UserRoute';
+import GradesPage from "../pages/GradesPage";
+import QuizPreviewWrapper from "/Users/nguyendacphuc/Downloads/edu/edu1/echooling-react-main/src/pages/QuizPreviewWrapper.js";
+import QuizAnswerTable from "../components/QuizAnswerTable";
 
-import  QuizPreviewWrapper from "/Users/nguyendacphuc/Downloads/edu/edu1/echooling-react-main/src/pages/QuizPreviewWrapper.js";
 const App = () => {
     const [isLoading, setIsLoading] = useState(true);
-    const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token')); // Kiểm tra token trong localStorage
+const [isLoggedIn, setIsLoggedIn] = useState(undefined); // undefined ban đầu để tránh nhấp nháy
 
-    useEffect(() => {
-        setTimeout(() => {
-            setIsLoading(false);
-        }, 500);
-    }, []);
+useEffect(() => {
+  const checkLogin = () => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+  };
+
+  checkLogin();
+
+  // Lắng nghe thay đổi token giữa các tab
+  window.addEventListener('storage', checkLogin);
+
+  return () => {
+    window.removeEventListener('storage', checkLogin);
+  };
+}, []);
+
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setIsLoading(false);
+  }, 500);
+  return () => clearTimeout(timer);
+}, []);
+
 
     const handleLogin = () => {
-        setIsLoggedIn(true); // Cập nhật trạng thái khi đăng nhập
-        console.log('User logged in:', true); // Log trạng thái đăng nhập
+        setIsLoggedIn(true);
+        console.log('User logged in:', true);
     };
 
     const handleLogout = () => {
-        setIsLoggedIn(false); // Cập nhật trạng thái khi đăng xuất
-        localStorage.removeItem('token'); // Xóa token khỏi localStorage
-        localStorage.removeItem('role'); // Xóa vai trò khỏi localStorage
-        console.log('User logged out:', false); // Log trạng thái đăng xuất
+        setIsLoggedIn(false);
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        console.log('User logged out:', false);
     };
 
     return (
@@ -67,6 +87,7 @@ const App = () => {
             <>
                 <LoadTop />
                 <Routes>
+                    {/* Public Routes */}
                     <Route path="/" exact element={<HomeMain />} />
                     <Route path="/login" element={<Login onLogin={handleLogin} setIsLoggedIn={setIsLoggedIn} />} />
                     <Route path="/about" element={<About />} />
@@ -81,20 +102,24 @@ const App = () => {
                     <Route path="/instructor" element={<Instructor />} />
                     <Route path="/instructor/:id" element={<InstructorDetails />} />
                     <Route path="/contact" element={<Contact />} />
+                    <Route path="/answer/:quizId" element={<QuizAnswerTable />} />
 
-                    {/* Protected Routes with AdminLayout */}
+
+                    {/* Shared Protected Route for doing quiz (admin & user) */}
+                    <Route element={<ProtectedRoute isLoggedIn={isLoggedIn} />}>
+                        <Route path="/user/do-quiz/:quizId" element={<QuizPreviewWrapper />} />
+                    </Route>
+
+                    {/* Admin Protected Routes */}
                     <Route element={<AdminRoute isLoggedIn={isLoggedIn} />}>
-  <Route path="/admin" element={<AdminLayout onLogout={handleLogout} setIsLoggedIn={setIsLoggedIn} />}>
-                            <Route index element={<Dashbroad />} /> {/* Quan trọng */}
+                        <Route path="/admin" element={<AdminLayout onLogout={handleLogout} setIsLoggedIn={setIsLoggedIn} />}>
+                            <Route index element={<Dashbroad />} />
                             <Route path="dashboard" element={<Dashbroad />} />
                             <Route path="adminUser" element={<UserManagement />} />
                             <Route path="adminEvent" element={<AdminEvent />} />
                             <Route path="adminBlog" element={<AdminBlog />} />
                             <Route path="adminCourse" element={<AdminCourses />} />
-
-                            
-
-
+                            <Route path="grades/:userId" element={<GradesPage />} />
                             <Route path="quiz-manage" element={<QuizManage />} />
                             <Route path="quiz-preview/:id" element={<QuizPreview />} />
                             <Route path="preview/:quizId" element={<QuizPreviewWrapper />} />
@@ -106,13 +131,14 @@ const App = () => {
                         </Route>
                     </Route>
 
-                    <Route path='*' element={<Error />} />
+                    {/* User Protected Routes */}
                     <Route element={<UserRoute isLoggedIn={isLoggedIn} />}>
-  <Route path="/user" element={<UserDashboard />} />
-  <Route path="/user/do-quiz/:quizId" element={<QuizPreviewWrapper />} /> 
-  <Route path="/user/quizzes" element={<AssignedQuizzes />} />
-</Route>
+                        <Route path="/user" element={<UserDashboard />} />
+                        <Route path="/user/quizzes" element={<AssignedQuizzes />} />
+                    </Route>
 
+                    {/* 404 fallback */}
+                    <Route path="*" element={<Error />} />
                 </Routes>
             </>
         </div>

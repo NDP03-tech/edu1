@@ -1,32 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MicRecorder from 'mic-recorder-to-mp3';
+import { Button, Upload, Typography, Space, Tooltip, message } from 'antd';
+import { UploadOutlined, AudioOutlined, StopOutlined, StepBackwardOutlined, StepForwardOutlined } from '@ant-design/icons';
 
+const { Paragraph } = Typography;
 const recorder = new MicRecorder({ bitRate: 128 });
 
 const SpeakingRenderer = ({ question, initialAnswer = null, onAnswerChange }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaUrl, setMediaUrl] = useState(null);
   const [mediaBlob, setMediaBlob] = useState(null);
-  const mediaRef = useRef(null); // Tham chiếu đến audio hoặc video
+  const mediaRef = useRef(null);
 
   useEffect(() => {
     if (initialAnswer) {
       if (typeof initialAnswer === "string") {
-        console.log('Load initialAnswer as URL:', initialAnswer);
         setMediaUrl(initialAnswer);
         setMediaBlob(null);
       } else if (initialAnswer instanceof File) {
-        console.log('Load initialAnswer as File:', initialAnswer);
         setMediaUrl(URL.createObjectURL(initialAnswer));
         setMediaBlob(initialAnswer);
       }
     }
   }, [initialAnswer]);
 
-  // Upload file lên server
   const uploadMediaToServer = async (file) => {
     try {
-      console.log('Uploading file to server...', file);
       const formData = new FormData();
       formData.append('file', file);
 
@@ -36,16 +35,14 @@ const SpeakingRenderer = ({ question, initialAnswer = null, onAnswerChange }) =>
       });
 
       if (!res.ok) {
-        console.error('Upload failed with status:', res.status);
         throw new Error('Upload failed');
       }
 
       const data = await res.json();
-      console.log('Upload success, server returned:', data);
-
       return data.fileUrl;
     } catch (error) {
-      console.error('Upload error:', error);
+      message.error('Lỗi khi tải file lên máy chủ.');
+      console.error(error);
       return null;
     }
   };
@@ -54,14 +51,13 @@ const SpeakingRenderer = ({ question, initialAnswer = null, onAnswerChange }) =>
     recorder.start()
       .then(() => {
         setIsRecording(true);
-        console.log('Recording started');
+        message.success("🎤 Bắt đầu ghi âm");
       })
       .catch(console.error);
   };
 
   const stopRecording = () => {
-    recorder.stop()
-      .getMp3()
+    recorder.stop().getMp3()
       .then(async ([buffer, blob]) => {
         const file = new File(buffer, 'recording.mp3', {
           type: blob.type,
@@ -72,87 +68,85 @@ const SpeakingRenderer = ({ question, initialAnswer = null, onAnswerChange }) =>
         if (uploadedUrl) {
           setMediaUrl(uploadedUrl);
           setMediaBlob(null);
-          console.log('Audio uploaded successfully:', uploadedUrl);
           if (onAnswerChange) {
             onAnswerChange(question._id, uploadedUrl);
           }
-        } else {
-          console.log('Upload failed or no URL returned');
+          message.success("✅ Ghi âm đã được tải lên thành công");
         }
-
         setIsRecording(false);
-      }).catch(console.error);
+      })
+      .catch(console.error);
   };
 
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleUpload = async (info) => {
+    const file = info.file.originFileObj;
     if (!file) return;
 
     const uploadedUrl = await uploadMediaToServer(file);
     if (uploadedUrl) {
       setMediaUrl(uploadedUrl);
       setMediaBlob(null);
-      console.log('File uploaded by user successfully:', uploadedUrl);
       if (onAnswerChange) {
         onAnswerChange(question._id, uploadedUrl);
       }
-    } else {
-      console.log('Upload failed or no URL returned');
+      message.success("📁 Tệp đã được tải lên");
     }
   };
 
-  // Hàm tua lùi 10 giây
   const seekBackward = () => {
     if (mediaRef.current) {
       mediaRef.current.currentTime = Math.max(0, mediaRef.current.currentTime - 10);
     }
   };
 
-  // Hàm tua tới 10 giây
   const seekForward = () => {
     if (mediaRef.current) {
       mediaRef.current.currentTime = Math.min(mediaRef.current.duration, mediaRef.current.currentTime + 10);
     }
   };
 
-  // Hàm kiểm tra kiểu media (audio/video) dựa trên đuôi file
   const isVideo = (url) => {
-    if (!url) return false;
     const videoExtensions = ['.mp4', '.webm', '.ogg'];
-    return videoExtensions.some(ext => url.toLowerCase().endsWith(ext));
+    return videoExtensions.some(ext => url?.toLowerCase().endsWith(ext));
   };
 
-  console.log('Render mediaUrl:', mediaUrl);
-
   return (
-    <div>
+    <div style={{ marginBottom: 24 }}>
       <div
-        className="border rounded p-3 mb-3"
+        className="ant-typography"
         dangerouslySetInnerHTML={{ __html: question.question_text }}
+        style={{ background: '#fafafa', padding: 16, borderRadius: 8, marginBottom: 16 }}
       />
 
-      <div className="mb-3">
+      <Space style={{ marginBottom: 16 }} wrap>
         {!isRecording ? (
-          <button className="btn btn-success me-2" onClick={startRecording}>🎤 Ghi âm</button>
+          <Button type="primary" icon={<AudioOutlined />} onClick={startRecording}>
+            Ghi âm
+          </Button>
         ) : (
-          <button className="btn btn-danger me-2" onClick={stopRecording}>⏹️ Dừng</button>
+          <Button danger icon={<StopOutlined />} onClick={stopRecording}>
+            Dừng
+          </Button>
         )}
 
-        <label className="btn btn-outline-secondary">
-          📁 Tải lên
-          <input type="file" accept="audio/*,video/*" onChange={handleUpload} hidden />
-        </label>
-      </div>
+        <Upload
+          showUploadList={false}
+          beforeUpload={() => false}
+          accept="audio/*,video/*"
+          customRequest={handleUpload}
+        >
+          <Button icon={<UploadOutlined />}>Tải lên</Button>
+        </Upload>
+      </Space>
 
       {mediaUrl && (
-        <>
+        <div>
           {isVideo(mediaUrl) ? (
             <video
               ref={mediaRef}
               controls
               src={mediaUrl}
               style={{ width: '100%', maxHeight: '360px' }}
-              preload="metadata"
             />
           ) : (
             <audio
@@ -160,15 +154,18 @@ const SpeakingRenderer = ({ question, initialAnswer = null, onAnswerChange }) =>
               controls
               src={mediaUrl}
               style={{ width: '100%', height: '40px' }}
-              preload="metadata"
             />
           )}
 
-          <div style={{ marginTop: 8 }}>
-            <button className="btn btn-secondary me-2" onClick={seekBackward}>« Tua lùi 10s</button>
-            <button className="btn btn-secondary" onClick={seekForward}>Tua tới 10s »</button>
-          </div>
-        </>
+          <Space style={{ marginTop: 8 }}>
+            <Tooltip title="Tua lùi 10 giây">
+              <Button icon={<StepBackwardOutlined />} onClick={seekBackward} />
+            </Tooltip>
+            <Tooltip title="Tua tới 10 giây">
+              <Button icon={<StepForwardOutlined />} onClick={seekForward} />
+            </Tooltip>
+          </Space>
+        </div>
       )}
     </div>
   );

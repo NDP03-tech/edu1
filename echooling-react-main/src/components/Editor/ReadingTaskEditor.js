@@ -1,5 +1,5 @@
-import React from 'react';
-import RichTextEditor from './RichTextEditor'; // Đường dẫn tới file RichTextEditor của bạn
+import React, { useEffect } from 'react';
+import RichTextEditor from './RichTextEditor';
 
 const ReadingTaskEditor = ({
   readingContent,
@@ -12,6 +12,15 @@ const ReadingTaskEditor = ({
   onAddHint,
   onCreateDropdown
 }) => {
+  // Ghi log khi readingContent hoặc questionText thay đổi
+  useEffect(() => {
+    console.log('📘 Bài đọc (readingContent):', readingContent);
+  }, [readingContent]);
+
+  useEffect(() => {
+    console.log('📝 Câu hỏi (questionText):', questionText);
+  }, [questionText]);
+
   return (
     <div className="container-fluid">
       <div className="row g-4">
@@ -21,7 +30,6 @@ const ReadingTaskEditor = ({
           <RichTextEditor
             value={readingContent}
             onChange={setReadingContent}
-            // Không truyền các callback tạo gap để ẩn các nút này trong toolbar
           />
         </div>
 

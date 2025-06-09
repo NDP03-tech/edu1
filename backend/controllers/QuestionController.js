@@ -22,6 +22,7 @@ exports.createQuestion = async (req, res) => {
       options,
       dropdowns,
       hintWords,
+      readingContent,
     } = req.body;
 
     // Map camelCase fields to snake_case schema fields
@@ -66,6 +67,7 @@ exports.updateQuestion = async (req, res) => {
     question.dropdowns = req.body.dropdowns ?? question.dropdowns;
     question.hintWords = req.body.hintWords ?? req.body.hint_words ?? question.hintWords;
     question.quiz_id = req.body.quiz_id ?? question.quiz_id;
+    question.readingContent = req.body.readingContent ?? question.readingContent;
 
     await question.save();
 

@@ -1,27 +1,38 @@
-// QuizStartScreen.jsx
 import React from "react";
+import { Card, Typography, Button } from "antd";
+
+const { Title, Paragraph } = Typography;
 
 const QuizStartScreen = ({ instruction, onStart }) => {
   return (
-    <div className="p-4 max-w-xl mx-auto text-center">
-     <h2 className="text-xl font-bold mb-4">Instructions</h2>
-<div
-  className="mb-6 whitespace-pre-wrap"
-  dangerouslySetInnerHTML={{ __html: instruction }}
-/>
-
-      <button
-        onClick={onStart}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+    <div style={{ maxWidth: 700, margin: "40px auto", padding: "16px" }}>
+      <Card
+        bordered
+        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
       >
-        Start Quiz
-      </button>
+        <Typography style={{ textAlign: "center" }}>
+          <Title level={3}> Instructions</Title>
+          <Paragraph>
+            <div
+              className="whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{ __html: instruction }}
+            />
+          </Paragraph>
+        </Typography>
+
+        <div style={{ textAlign: "center", marginTop: 24 }}>
+          <Button
+            type="primary"
+            size="large"
+            onClick={onStart}
+            style={{ borderRadius: 8 }}
+          >
+             Start Quiz
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 };
 
 export default QuizStartScreen;
-
-
-
-// QuizSubmitScreen.j

@@ -20,4 +20,8 @@ router.get('/:category/quizzes', async (req, res) => {
   }
 });
 
+// DELETE: Xoá category và tất cả quizzes thuộc category
+router.delete('/:categoryId', categoryController.deleteCategoryAndQuizzes);
+
+
 module.exports = router;

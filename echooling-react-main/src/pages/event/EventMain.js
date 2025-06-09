@@ -53,9 +53,9 @@ const EventMain = () => {
             <div className="container">  
                 <div className="row">
                     {currentEvents.map((data) => (
-                        <div className="col-lg-3" key={data.id}>
+                        <div className="col-lg-3" key={data._id}>
                             <SingleEvent
-                                eventID={data.id}
+                                eventID={data._id}
                                 eventImg={data.image}
                                 eventBannerImg={data.bannerImg}
                                 eventDayCount={data.dayCount}

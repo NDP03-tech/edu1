@@ -1,59 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
-
 import msly from "../../assets/images/instructors/msly.jpeg";
+import EventRegisterModal from '../../components/ResigterForm/EventRegisterModal';
 
-const EventDetailsMain = ({ eventId }) => {
-    const [eventDetails, setEventDetails] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+const EventDetailsMain = ({ event }) => {
+    const [showRegisterModal, setShowRegisterModal] = useState(false);
 
-    useEffect(() => {
-        const fetchEventDetails = async () => {
-            if (!eventId) {
-                setError('Event ID is undefined');
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const response = await axios.get(`http://localhost:5000/api/events/${eventId}`);
-                setEventDetails(response.data);
-            } catch (err) {
-                console.error('Error fetching event details:', err);
-                setError('Failed to fetch event details');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchEventDetails();
-    }, [eventId]);
-
-    if (loading) {
-        return <div>Loading...</div>;
-    }
-
-    if (error) {
-        return <div>{error}</div>;
-    }
-
-    // Kiểm tra xem eventDetails có tồn tại không
-    if (!eventDetails) {
-        return <div>Event not found</div>;
-    }
+    if (!event) return <div>Event not found</div>;
 
     const {
-        eventDate,
-        eventStartTime,
-        eventEndTime,
-        eventLocation,
-        eventCost,
-        eventHost,
-        eventContactNo,
-        eventContent,
-    } = eventDetails;
+        _id: eventID,
+        date: eventDate,
+        startTime: eventStartTime,
+        endTime: eventEndTime,
+        location: eventLocation,
+        cost: eventCost,
+        host: eventHost,
+        phone: eventContactNo,
+        content: eventContent
+    } = event;
 
     return (
         <div className="back__course__page_grid react-courses__single-page react-events__single-page pb---40 pt---120">
@@ -62,7 +27,7 @@ const EventDetailsMain = ({ eventId }) => {
                     <div className="col-lg-8">
                         <div className="events-details">
                             <h3>About The Event</h3>
-                            <p>{eventContent}</p>
+                            <div dangerouslySetInnerHTML={{ __html: eventContent }} />
                             <ul className="others-instructors">
                                 <li>Người tổ chức sự kiện: {eventHost}</li>
                                 <li>
@@ -86,23 +51,19 @@ const EventDetailsMain = ({ eventId }) => {
                                     <li><i className="icon_ribbon_alt"></i> Cost: <b className="prs">{eventCost}</b></li>
                                     <li><i className="icon_profile"></i> Instructor: <b>{eventHost}</b></li>
                                 </ul>
-                                <Link to="https://forms.gle/nTSLtEqaFXK3sGGJ8" className="start-btn" target="_blank" rel="noopener noreferrer">
-                                    Join Now! 
+                                
+                                <button
+                                    className="start-btn"
+                                    onClick={() => setShowRegisterModal(true)}
+                                >
+                                    Join Now!
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-arrow-right">
                                         <line x1="5" y1="12" x2="19" y2="12"></line>
                                         <polyline points="12 5 19 12 12 19"></polyline>
                                     </svg>
-                                </Link>
+                                </button>
+
                                 <div className="share-course">
-                                    Share this course <em>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-share-2">
-                                            <circle cx="18" cy="5" r="3"></circle>
-                                            <circle cx="6" cy="12" r="3"></circle>
-                                            <circle cx="18" cy="19" r="3"></circle>
-                                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                                        </svg>
-                                    </em>
                                     <span>
                                         <Link to="#"><i aria-hidden="true" className="social_facebook"></i></Link>
                                         <Link to="#"><i aria-hidden="true" className="social_linkedin"></i></Link>
@@ -121,8 +82,15 @@ const EventDetailsMain = ({ eventId }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Modal đăng ký sự kiện */}
+            <EventRegisterModal
+    open={showRegisterModal}
+    onClose={() => setShowRegisterModal(false)}
+    event={event}
+/>
         </div>  
     );
-}
+};
 
 export default EventDetailsMain;

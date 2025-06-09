@@ -16,19 +16,19 @@ const QuizBuilder = () => {
     const fetchData = async () => {
       try {
         const quizRes = await fetch(`http://localhost:5000/api/quizzes/${quizId}`);
-        if (!quizRes.ok) throw new Error("Không tìm thấy quiz.");
+        if (!quizRes.ok) throw new Error("Quiz not found.");
         const quizData = await quizRes.json();
-        console.log("✅ Quiz Info:", quizData); // ✅ Log quiz info
+        console.log("✅ Quiz Info:", quizData);
         setQuizInfo(quizData);
 
         const questionRes = await fetch(`http://localhost:5000/api/questions/by-quiz/${quizId}`);
-        if (!questionRes.ok) throw new Error("Không thể lấy câu hỏi.");
+        if (!questionRes.ok) throw new Error("Failed to fetch questions.");
         const questionsData = await questionRes.json();
-        console.log("✅ Questions Fetched:", questionsData); // ✅ Log danh sách câu hỏi
+        console.log("✅ Questions Fetched:", questionsData);
         setQuestions(questionsData);
       } catch (err) {
-        console.error("❌ Lỗi khi lấy dữ liệu:", err);
-        alert("Không thể tải dữ liệu quiz.");
+        console.error("❌ Error fetching data:", err);
+        alert("Failed to load quiz data.");
         navigate("/quiz-manage");
       } finally {
         setLoading(false);
@@ -46,7 +46,7 @@ const QuizBuilder = () => {
         body: JSON.stringify(quizInfo),
       });
 
-      if (!quizRes.ok) throw new Error("Không thể cập nhật quiz.");
+      if (!quizRes.ok) throw new Error("Failed to update quiz.");
       const updatedQuiz = await quizRes.json();
       setQuizInfo(updatedQuiz);
       console.log("✅ Quiz updated!");
@@ -64,7 +64,7 @@ const QuizBuilder = () => {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(questionData),
             });
-            if (!res.ok) throw new Error("Cập nhật câu hỏi thất bại");
+            if (!res.ok) throw new Error("Failed to update question.");
             return await res.json();
           } else {
             const res = await fetch(`http://localhost:5000/api/questions`, {
@@ -72,17 +72,17 @@ const QuizBuilder = () => {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(questionData),
             });
-            if (!res.ok) throw new Error("Tạo câu hỏi mới thất bại");
+            if (!res.ok) throw new Error("Failed to create question.");
             return await res.json();
           }
         })
       );
 
       setQuestions(updatedQuestions);
-      alert("🎉 Quiz và các câu hỏi đã được lưu thành công.");
+      alert("🎉 Quiz and questions saved successfully.");
     } catch (err) {
-      console.error("❌ Lỗi khi lưu quiz và câu hỏi:", err);
-      alert("Lỗi khi lưu quiz và câu hỏi.");
+      console.error("❌ Error saving quiz and questions:", err);
+      alert("Failed to save quiz and questions.");
     }
   };
 
@@ -95,7 +95,7 @@ const QuizBuilder = () => {
   };
 
   const handleDeleteQuestion = async (index, questionId) => {
-    if (!window.confirm("Bạn có chắc muốn xoá câu hỏi này?")) return;
+    if (!window.confirm("Are you sure you want to delete this question?")) return;
 
     try {
       if (questionId) {
@@ -103,15 +103,15 @@ const QuizBuilder = () => {
           method: "DELETE",
         });
 
-        if (!res.ok) throw new Error("Xoá câu hỏi thất bại");
+        if (!res.ok) throw new Error("Failed to delete question.");
       }
 
       const updated = [...questions];
       updated.splice(index, 1);
       setQuestions(updated);
     } catch (err) {
-      console.error("❌ Lỗi khi xoá câu hỏi:", err);
-      alert("Xoá câu hỏi thất bại.");
+      console.error("❌ Error deleting question:", err);
+      alert("Failed to delete question.");
     }
   };
 
@@ -141,10 +141,8 @@ const QuizBuilder = () => {
 
   return (
     <div className="container mt-4">
-      <h3>📋 Trình tạo Quiz</h3>
-
       {loading ? (
-        <p>⏳ Đang tải dữ liệu...</p>
+        <p>⏳ Loading data...</p>
       ) : (
         <>
           <QuizInfo
@@ -175,14 +173,14 @@ const QuizBuilder = () => {
             </div>
           ))}
           <button className="btn btn-primary mt-4" onClick={() => handleAddQuestion({})}>
-            ➕ Thêm câu hỏi mới
+            ➕ Add New Question
           </button>
           <div className="text-end mt-4">
             <button className="btn btn-success me-2" onClick={handleSaveQuizInfo}>
-              💾 Lưu Quiz
+               Save Quiz
             </button>
             <button className="btn btn-info" onClick={() => navigate(`/admin/quiz-preview/${quizId}`)}>
-              👀 Xem trước Quiz
+             Preview Quiz
             </button>
           </div>
         </>

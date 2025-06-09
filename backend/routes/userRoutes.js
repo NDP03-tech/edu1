@@ -58,7 +58,7 @@ router.post('/register', async (req, res) => {
 router.get('/users', authenticateToken, userController.getUsers);
 router.post('/users', authenticateToken, userController.addUser);
 router.put('/users/:id', authenticateToken, userController.updateUser);
-router.delete('/users/:id', authenticateToken, userController.deleteUser);
+router.delete('/users/:id',  userController.deleteUser);
 
 // Tạo tài khoản admin
 router.post('/create-admin', async (req, res) => {

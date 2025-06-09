@@ -120,34 +120,7 @@ const FindHighlightRenderer = ({
     setSelection([]);
   };
 
-  const checkAnswers = () => {
-    const correctAnswers = question.gaps.map((g) => {
-      const raw =
-        typeof g.correct_answers === "string"
-          ? g.correct_answers
-          : Array.isArray(g.correct_answers)
-          ? g.correct_answers[0]
-          : "";
-      return {
-        text: normalizeText(raw),
-        start: g.position,
-        end: g.position + g.length,
-      };
-    });
-
-    let matched = 0;
-
-    correctAnswers.forEach((correct) => {
-      const found = highlights.find(
-        (h) =>
-          h.text === correct.text &&
-          Math.abs(h.start - correct.start) <= 2
-      );
-      if (found) matched += 1;
-    });
-
-    setResult({ correct: matched, total: correctAnswers.length });
-  };
+ 
 
   return (
     <div>
@@ -159,9 +132,7 @@ const FindHighlightRenderer = ({
           <button onClick={removeHighlight} className="btn btn-sm btn-outline-danger">
             Remove Highlight
           </button>
-          <button onClick={checkAnswers} className="btn btn-sm btn-success">
-            ✅ Check Answer
-          </button>
+          
         </div>
       )}
 

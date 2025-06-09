@@ -1,14 +1,30 @@
 import React, { useEffect, useState } from "react";
-import parse from "html-react-parser";
 
-const BlankBoxesRenderer = ({ question, initialAnswer = {}, onAnswerChange }) => {
+const BlankBoxesRenderer = ({
+  question,
+  initialAnswer = {},
+  onAnswerChange,
+  answerStatus = {}, // ✅ truyền từ hệ thống sau khi submit
+  showCorrectAnswer = false,
+  editable = true,
+}) => {
   const [answers, setAnswers] = useState({});
+  const normalize = (str) => (str || "").trim().toLowerCase();
 
-  // Parse question_text thành mảng gồm các đoạn text xen kẽ gap input hoặc dropdown
-  // Mảng dạng: [{type:"text", content:string} hoặc {type:"input"/"dropdown", index:number, options?}]
+
+  useEffect(() => {
+    setAnswers(initialAnswer || {});
+  }, [question?._id, initialAnswer]);
+
+  const onChange = (index, value) => {
+    const newAnswers = { ...answers, [index]: value };
+    setAnswers(newAnswers);
+    onAnswerChange && onAnswerChange(question._id, newAnswers);
+  };
+
+  if (!question || !question.question_text) return null;
+
   const parseQuestionText = () => {
-    if (!question || !question.question_text) return [];
-
     const div = document.createElement("div");
     div.innerHTML = question.question_text;
 
@@ -17,23 +33,20 @@ const BlankBoxesRenderer = ({ question, initialAnswer = {}, onAnswerChange }) =>
 
     const walkNodes = (parent) => {
       parent.childNodes.forEach((node) => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          if (node.textContent.trim() !== "") {
-            result.push({ type: "text", content: node.textContent });
-          }
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "") {
+          result.push({ type: "text", content: node.textContent });
         } else if (node.nodeType === Node.ELEMENT_NODE) {
           const el = node;
           if (el.classList.contains("cloze")) {
             const isDropdown = el.classList.contains("dropdown");
+            const index = gapIndex++;
             if (isDropdown) {
               const options = JSON.parse(el.dataset.options || "[]");
-              result.push({ type: "dropdown", options, index: gapIndex });
+              result.push({ type: "dropdown", options, index });
             } else {
-              result.push({ type: "input", index: gapIndex });
+              result.push({ type: "input", index });
             }
-            gapIndex++;
           } else {
-            // Đệ quy xử lý các node con
             walkNodes(el);
           }
         }
@@ -41,84 +54,93 @@ const BlankBoxesRenderer = ({ question, initialAnswer = {}, onAnswerChange }) =>
     };
 
     walkNodes(div);
-
     return result;
   };
 
-  useEffect(() => {
-    setAnswers(initialAnswer);
-  }, [question?._id, initialAnswer]);
-
-  const onChange = (index, value) => {
-    const newAnswers = { ...answers, [index]: value };
-    setAnswers(newAnswers);
-    if (onAnswerChange) {
-      onAnswerChange(question._id, newAnswers);
-    }
-  };
-
-  if (!question || !question.question_text) return null;
-
   const parsed = parseQuestionText();
+
+  const getStyle = (index) => {
+    if (!showCorrectAnswer) return {};
+    if (answerStatus[index] === true) {
+      return { backgroundColor: "#d4edda", borderColor: "#28a745" }; // Green
+    } else if (answerStatus[index] === false) {
+      return { backgroundColor: "#f8d7da", borderColor: "#dc3545" }; // Red
+    }
+    return {};
+  };
+  
 
   return (
     <div className="rendered-question">
-      {/* Render phần text xen kẽ input và dropdown */}
       {parsed.map((item, idx) => {
-        if (item.type === "text") {
-          return <span key={idx}>{item.content}</span>;
-        }
+        const correct = question?.gaps?.correct_answers?.[item.index];
+        const isIncorrect = showCorrectAnswer && answerStatus[item.index] === false;
+
+        if (item.type === "text") return <span key={idx}>{item.content}</span>;
+
         if (item.type === "input") {
           return (
-            <input
-              key={idx}
-              type="text"
-              className="form-control d-inline-block gap-input"
-              style={{
-                width: "auto",
-                minWidth: 30,
-                margin: "0 4px",
-                padding: "4px 8px",
-                fontSize: 14,
-                display: "inline-block",
-              }}
-              value={answers[item.index] || ""}
-              onChange={(e) => onChange(item.index, e.target.value)}
-            />
+            <span key={idx} style={{ display: "inline-block" }}>
+              <input
+                type="text"
+                className="form-control d-inline-block gap-input"
+                style={{
+                  width: "auto",
+                  minWidth: 30,
+                  margin: "0 4px",
+                  padding: "4px 8px",
+                  fontSize: 14,
+                  ...getStyle(item.index),
+                }}
+                value={answers[item.index] ?? ""}
+                onChange={(e) => onChange(item.index, e.target.value)}
+                disabled={!editable}
+              />
+              {isIncorrect && correct && (
+                <span className="text-muted small ms-1">
+                  ({correct})
+                </span>
+              )}
+            </span>
           );
         }
+
         if (item.type === "dropdown") {
           return (
-            <select
-              key={idx}
-              className="form-select d-inline-block gap-dropdown"
-              style={{
-                width: "auto",
-                margin: "0 4px",
-                padding: "4px 8px",
-                fontSize: 14,
-              }}
-              value={answers[item.index] || ""}
-              onChange={(e) => onChange(item.index, e.target.value)}
-            >
-              <option value="" disabled hidden>
-                -- Chọn --
-              </option>
-              {item.options.map((opt, i) => (
-                <option key={i} value={opt}>
-                  {opt}
+            <span key={idx} style={{ display: "inline-block" }}>
+              <select
+                className="form-select d-inline-block gap-dropdown"
+                style={{
+                  width: "auto",
+                  margin: "0 4px",
+                  padding: "4px 8px",
+                  fontSize: 14,
+                  ...getStyle(item.index),
+                }}
+                value={answers[item.index] ?? ""}
+                onChange={(e) => onChange(item.index, e.target.value)}
+                disabled={!editable}
+              >
+                <option value="" disabled hidden>
+                  -- Chọn --
                 </option>
-              ))}
-            </select>
+                {item.options.map((opt, i) => (
+                  <option key={i} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              {isIncorrect && correct && (
+                <span className="text-muted small ms-1">
+                  ({correct})
+                </span>
+              )}
+            </span>
           );
         }
+
         return null;
       })}
-
-      {/* Render toàn bộ question_text bằng html-react-parser */}
-      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #ccc" }}>
-        {parse(question.question_text)}
-      </div>
     </div>
   );
 };

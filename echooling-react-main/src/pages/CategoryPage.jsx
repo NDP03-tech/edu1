@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { Button, Input, List, message, Typography, Modal, Card, Row, Col, Divider } from 'antd';
+import { PlusOutlined, BookOutlined, DeleteOutlined } from '@ant-design/icons';
 import axios from 'axios';
-import { Button, Input, List, message, Typography } from 'antd';
-import { PlusOutlined, BookOutlined, AppstoreAddOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
@@ -11,16 +12,26 @@ const CategoryPage = () => {
   const [newCategory, setNewCategory] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     fetchCategories();
   }, []);
 
   const fetchCategories = async () => {
-    const res = await axios.get('http://localhost:5000/api/categories');
-    setCategories(res.data);
+    try {
+      const res = await axios.get('http://localhost:5000/api/categories');
+      setCategories(res.data);
+    } catch (err) {
+      message.error('Failed to fetch categories');
+    }
   };
 
   const addCategory = async () => {
+    if (!newCategory.trim()) {
+      return message.warning('Category name cannot be empty.');
+    }
+
     try {
       const res = await axios.post('http://localhost:5000/api/categories', { name: newCategory });
       setCategories(prev => [...prev, res.data]);
@@ -31,57 +42,104 @@ const CategoryPage = () => {
     }
   };
 
-  const fetchQuizzesByCategory = async (cat) => {
-    setSelectedCategory(cat);
-    const res = await axios.get(`http://localhost:5000/api/categories/${cat}/quizzes`);
-    setQuizzes(res.data);
+  const fetchQuizzesByCategory = async (catName) => {
+    setSelectedCategory(catName);
+    try {
+      const res = await axios.get(`http://localhost:5000/api/categories/${catName}/quizzes`);
+      setQuizzes(res.data);
+    } catch (err) {
+      message.error('Failed to fetch quizzes.');
+    }
+  };
+
+  const handleQuizClick = (quizId) => {
+    navigate(`/user/do-quiz/${quizId}`);
+  };
+
+  const handleDeleteCategory = (cat) => {
+    Modal.confirm({
+      title: `Delete category "${cat.name}"?`,
+      content: 'This will also delete all quizzes in this category.',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await axios.delete(`http://localhost:5000/api/categories/${cat._id}`);
+          setCategories(prev => prev.filter(c => c._id !== cat._id));
+
+          if (selectedCategory === cat.name) {
+            setSelectedCategory('');
+            setQuizzes([]);
+          }
+
+          message.success('Category and its quizzes deleted.');
+        } catch (err) {
+          message.error('Failed to delete category.');
+        }
+      },
+    });
   };
 
   return (
     <div className="container mt-4">
-      <Title level={2}>
-        <AppstoreAddOutlined style={{ marginRight: '8px' }} />
-        Quiz Categories
-      </Title>
+      <Title level={3}>📚 Quiz Categories</Title>
 
-      <div className="mb-3">
-        <Input
-          placeholder="New category name"
-          value={newCategory}
-          onChange={(e) => setNewCategory(e.target.value)}
-          style={{ width: '300px', marginRight: '8px' }}
-        />
-        <Button type="primary" icon={<PlusOutlined />} onClick={addCategory}>
-          Add Category
-        </Button>
-      </div>
+      <Card className="mb-4" title="Manage Categories">
+        <Row gutter={[8, 8]} align="middle">
+          <Col xs={24} sm={16} md={12}>
+            <Input
+              placeholder="Enter new category"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+            />
+          </Col>
+          <Col xs={24} sm={8} md={4}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={addCategory} block>
+              Add
+            </Button>
+          </Col>
+        </Row>
 
-      <div className="d-flex flex-wrap gap-3">
-        {categories.map(cat => (
-          <Button
-            key={cat._id}
-            type={cat.name === selectedCategory ? 'primary' : 'default'}
-            icon={<BookOutlined />}
-            onClick={() => fetchQuizzesByCategory(cat.name)}
-          >
-            {cat.name}
-          </Button>
-        ))}
-      </div>
+        <Divider />
 
-      <hr />
+        <Row gutter={[12, 12]} className="mt-3">
+          {categories.map((cat) => (
+            <Col key={cat._id}>
+              <Button
+                type={cat.name === selectedCategory ? 'primary' : 'default'}
+                icon={<BookOutlined />}
+                onClick={() => fetchQuizzesByCategory(cat.name)}
+              >
+                {cat.name}
+              </Button>
+              <Button
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteCategory(cat)}
+                style={{ marginLeft: '6px' }}
+              />
+            </Col>
+          ))}
+        </Row>
+      </Card>
 
       {selectedCategory && (
         <>
-          <Title level={4}>Quizzes in category: <strong>{selectedCategory}</strong></Title>
+          <Title level={4}>📋 Quizzes in: <strong>{selectedCategory}</strong></Title>
           {quizzes.length === 0 ? (
             <p>No quizzes available.</p>
           ) : (
             <List
               bordered
               dataSource={quizzes}
-              renderItem={quiz => (
-                <List.Item key={quiz._id}>
+              renderItem={(quiz) => (
+                <List.Item
+                  key={quiz._id}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => handleQuizClick(quiz._id)}
+                >
                   {quiz.title || 'Untitled Quiz'}
                 </List.Item>
               )}

@@ -59,7 +59,7 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
             <h1>Create Quiz</h1>
 
             <div className="form-group">
-                <label>Tiêu đề:</label>
+                <label>Titile:</label>
                 <input
                     type="text"
                     className="form-control"
@@ -70,7 +70,7 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
             </div>
 
             <div className="form-group">
-                <label>Danh mục:</label>
+                <label>Category:</label>
                 <div className="d-flex gap-2">
                     <select
                         className="form-control"

@@ -12,8 +12,11 @@ const questionRoutes = require('./routes/questionRoutes'); // Thêm dòng này
 const categoriesRoutes = require('./routes/categories');
 const assignedQuizRoutes = require('./routes/assignedQuizRoutes');
 const classRoute = require('./routes/classRoute');
+const dashboardRoutes = require('./routes/dashboard');
 const resultRoutes = require('./routes/userQuizResultRoutes');
+const eventRegistrationRoutes = require('./routes/eventRegistration');
 const uploadRoute = require('./routes/uploadRoute');
+const courseRegistrationRoutes = require('./routes/courseRegistrationRoutes');
 const app = express();
 const path = require('path');
 // Middleware
@@ -46,6 +49,9 @@ app.use('/api/quizzes', quizRoutes);
 app.use('/api/questions', questionRoutes); // Thêm dòng này
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/classes',classRoute);
+app.use('/api/course-registrations', courseRegistrationRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/event-registrations', eventRegistrationRoutes);
 app.use('/api/assigned-quizzes', assignedQuizRoutes);
 // Route upload media (mp3, mp4)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

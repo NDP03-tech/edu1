@@ -157,55 +157,52 @@ const QuizManage = () => {
   }, []);
 
   return (
-    <div style={{ padding: "24px", maxWidth: 1200, margin: "0 auto" }}>
-      <div className="p-6 bg-white rounded shadow">
-        <div className="mb-4">
-          <span>Select Category </span>
-          <Select
-            style={{ width: 200 }}
-            value={selectedCategory}
-            onChange={(value) => setSelectedCategory(value)}
-          >
-            <Option value="all">All</Option>
-            {categories.map((cat, index) => (
-              <Option key={index} value={cat}>{cat}</Option>
-            ))}
-          </Select>
-        </div>
-  
-        <Button
-          danger
-          className="mb-4"
-          onClick={handleBulkDelete}
-          disabled={selectedQuizzes.length === 0}
+    <div className="p-6 bg-white rounded shadow">
+      <div className="mb-4">
+        <span>Select Category </span>
+        <Select
+          style={{ width: 200 }}
+          value={selectedCategory}
+          onChange={(value) => setSelectedCategory(value)}
         >
-          🗑️ Delete quizzes choose
-        </Button>
-  
-        {loading ? (
-          <Spin size="large" />
-        ) : (
-          <Table
-            rowKey="_id"
-            dataSource={currentQuizzes}
-            columns={columns}
-            pagination={false}
-          />
-        )}
-  
-        <div className="mt-4 text-center">
-          <Pagination
-            current={currentPage}
-            pageSize={quizzesPerPage}
-            total={filteredQuizzes.length}
-            onChange={(page) => setCurrentPage(page)}
-            showSizeChanger={false}
-          />
-        </div>
+          <Option value="all">All</Option>
+          {categories.map((cat, index) => (
+            <Option key={index} value={cat}>{cat}</Option>
+          ))}
+        </Select>
+      </div>
+
+      <Button
+        danger
+        className="mb-4"
+        onClick={handleBulkDelete}
+        disabled={selectedQuizzes.length === 0}
+      >
+        🗑️ Delete quizzes choose
+      </Button>
+
+      {loading ? (
+        <Spin size="large" />
+      ) : (
+        <Table
+          rowKey="_id"
+          dataSource={currentQuizzes}
+          columns={columns}
+          pagination={false}
+        />
+      )}
+
+      <div className="mt-4 text-center">
+        <Pagination
+          current={currentPage}
+          pageSize={quizzesPerPage}
+          total={filteredQuizzes.length}
+          onChange={(page) => setCurrentPage(page)}
+          showSizeChanger={false}
+        />
       </div>
     </div>
   );
-  
 };
 
 export default QuizManage;

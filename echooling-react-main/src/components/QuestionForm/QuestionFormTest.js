@@ -251,10 +251,10 @@ const QuestionFormTest = ({
           </>
         )}
 
-        <div className="mt-4">
+         <div className="mt-4">
           <label className="form-label">🧠 Explanation:</label>
           <ExplanationEditor value={explanation} onChange={setExplanation} />
-        </div>
+        </div> 
 
         <div className="d-flex gap-2 mt-3">
           {!questionId && (

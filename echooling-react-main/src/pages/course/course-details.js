@@ -26,7 +26,7 @@ const CourseDetails = () => {
 
         const fetchCourseDetails = async () => {
             try {
-                const response = await fetch(`http://localhost:5000/courses/${courseID}`);
+                const response = await fetch(`http://localhost:5000/api/course/${courseID}`);
                 if (!response.ok) {
                     const errorData = await response.json(); // ✅ Lấy thông tin lỗi từ backend
                     throw new Error(errorData.message || 'Không thể tải dữ liệu khóa học');

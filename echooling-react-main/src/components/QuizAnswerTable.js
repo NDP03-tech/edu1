@@ -1,15 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Spin, Typography } from 'antd';
+import { Table, Tag, Spin, Typography, Divider, Button } from 'antd';
 import moment from 'moment';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { DownloadOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
+
+const sanitizeText = (text) => {
+  if (typeof text !== 'string') return '';
+  return text
+    .replace(/[^\x20-\x7EÀ-ỹ\n\r]/g, '') // loại ký tự điều khiển không in được
+    .replace(/\s+/g, ' ')
+    .trim();
+};
 
 const QuizResultTable = () => {
   const { quizId } = useParams();
   const [data, setData] = useState([]);
-  const [answerColumns, setAnswerColumns] = useState([]);
+  const [questionParts, setQuestionParts] = useState([]);
+  const [correctAnswersRow, setCorrectAnswersRow] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchResults = async () => {
@@ -17,7 +29,7 @@ const QuizResultTable = () => {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(
-        `http://localhost:5000/api/results/best-attempts/${quizId}`,
+        `http://localhost:5000/api/results/quiz/${quizId}/best-attempts`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -25,39 +37,10 @@ const QuizResultTable = () => {
         }
       );
 
-      const attempts = res.data.results || [];
-      const correctAnswers = res.data.correctAnswers || [];
-
-      setData(attempts);
-
-      const columns = correctAnswers.map((ca, idx) => {
-        const key = `q${ca.questionIndex}-a${ca.partIndex}`;
-        return {
-          title: (
-            <div>
-              <strong>Q{ca.questionIndex + 1}-A{ca.partIndex + 1}</strong>
-              <div style={{ fontSize: 12, color: '#888' }}>{formatAnswerText(ca.answerText)}</div>
-            </div>
-          ),
-          key,
-          align: 'center',
-          render: (record) => {
-            const question = record.answers?.[ca.questionIndex];
-            const userAnswer = getAnswerByIndex(question?.answer, ca.partIndex);
-            const correct = question?.comparisonResult?.[ca.partIndex];
-
-            return (
-              <Tag color={correct ? 'green' : 'red'}>
-                {userAnswer !== undefined && userAnswer !== null && userAnswer !== ''
-                  ? String(userAnswer)
-                  : '—'}
-              </Tag>
-            );
-          },
-        };
-      });
-
-      setAnswerColumns(columns);
+      const { results, questionParts, correctAnswersRow } = res.data;
+      setData(results || []);
+      setQuestionParts(questionParts || []);
+      setCorrectAnswersRow(correctAnswersRow || []);
     } catch (err) {
       console.error('❌ Failed to fetch results:', err);
     } finally {
@@ -69,17 +52,74 @@ const QuizResultTable = () => {
     if (quizId) fetchResults();
   }, [quizId]);
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const title = `Best Attempts for Quiz`;
+    doc.setFontSize(16);
+    doc.text(title, 14, 20);
+
+    const head = [
+      [
+        'User',
+        'Score',
+        'Attempt',
+        'Submitted At',
+        ...questionParts.map((label) => sanitizeText(label)),
+      ],
+    ];
+
+    const body = data.map((record) => [
+      sanitizeText(record.user?.email || ''),
+      record.score,
+      record.attemptNumber,
+      moment(record.submittedAt).format('YYYY-MM-DD HH:mm'),
+      ...record.userAnswersRow.map((ans, idx) => {
+        const correct = record.answerStatusRow?.[idx];
+        const val = sanitizeText(
+          ans !== undefined && ans !== null && ans !== '' ? String(ans) : '—'
+        );
+        return correct === null
+          ? val
+          : correct
+          ? `✔ ${val}`
+          : `✘ ${val}`;
+      }),
+    ]);
+
+    doc.autoTable({
+      head,
+      body,
+      startY: 30,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [22, 160, 133] },
+      margin: { left: 10, right: 10 },
+    });
+
+    const correctRow = [
+      'Correct Answers',
+      '',
+      '',
+      '',
+      ...correctAnswersRow.map((ans) =>
+        sanitizeText(ans !== undefined && ans !== null && ans !== '' ? String(ans) : '—')
+      ),
+    ];
+
+    doc.autoTable({
+      body: [correctRow],
+      startY: doc.lastAutoTable.finalY + 10,
+      styles: { fontStyle: 'bold', fillColor: [255, 255, 204] },
+      margin: { left: 10, right: 10 },
+    });
+
+    doc.save(`quiz-${quizId}-best-attempts.pdf`);
+  };
+
   const baseColumns = [
     {
       title: 'User',
       dataIndex: ['user', 'email'],
       key: 'user',
-    },
-    {
-      title: 'Class',
-      dataIndex: ['class', 'name'],
-      key: 'class',
-      render: (name) => name || <em>None</em>,
     },
     {
       title: 'Score',
@@ -94,15 +134,6 @@ const QuizResultTable = () => {
       align: 'center',
     },
     {
-      title: 'Duration',
-      key: 'duration',
-      align: 'center',
-      render: (_, record) => {
-        const seconds = record.durationSeconds || 0;
-        return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-      },
-    },
-    {
       title: 'Submitted At',
       dataIndex: 'submittedAt',
       key: 'date',
@@ -111,9 +142,35 @@ const QuizResultTable = () => {
     },
   ];
 
+  const answerColumns = questionParts.map((label, idx) => ({
+    title: label,
+    key: `q-${idx}`,
+    align: 'center',
+    render: (record) => {
+      const ans = record.userAnswersRow?.[idx];
+      const correct = record.answerStatusRow?.[idx];
+      const val = ans !== undefined && ans !== null && ans !== '' ? String(ans) : '—';
+      return (
+        <Tag color={correct ? 'green' : 'red'}>
+          {val}
+        </Tag>
+      );
+    },
+  }));
+
   return (
     <div style={{ padding: 24 }}>
       <Title level={3}>📋 Best Attempts for Quiz</Title>
+
+      <Button
+        type="primary"
+        icon={<DownloadOutlined />}
+        onClick={exportToPDF}
+        style={{ marginBottom: 16 }}
+      >
+        Export PDF
+      </Button>
+
       <Spin spinning={loading}>
         <Table
           columns={[...baseColumns, ...answerColumns]}
@@ -123,29 +180,10 @@ const QuizResultTable = () => {
           bordered
           scroll={{ x: 'max-content' }}
         />
+        <Divider />
       </Spin>
     </div>
   );
-};
-
-// Format correct answer preview text
-const formatAnswerText = (answer) => {
-  if (typeof answer === 'string' || typeof answer === 'number') return String(answer);
-  if (Array.isArray(answer)) return answer.join(', ');
-  if (typeof answer === 'object' && answer !== null) {
-    return Object.values(answer).join(', ');
-  }
-  return '-';
-};
-
-// Get answer from array or object based on index
-const getAnswerByIndex = (answer, index) => {
-  if (Array.isArray(answer)) return answer[index];
-  if (typeof answer === 'object' && answer !== null) {
-    const values = Object.values(answer);
-    return values[index];
-  }
-  return null;
 };
 
 export default QuizResultTable;

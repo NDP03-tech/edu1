@@ -24,7 +24,7 @@ const CourseDetailsMain = () => {
 
     const fetchCourse = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/courses/${courseId}`);
+        const response = await fetch(`http://localhost:5000/api/course/${courseId}`);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || "Failed to fetch course data.");

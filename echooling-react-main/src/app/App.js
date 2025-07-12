@@ -40,7 +40,8 @@ import UserRoute from '../components/ProtectedRoute/UserRoute';
 import GradesPage from "../pages/GradesPage";
 import QuizPreviewWrapper from "/Users/nguyendacphuc/Downloads/edu/edu1/echooling-react-main/src/pages/QuizPreviewWrapper.js";
 import QuizAnswerTable from "../components/QuizAnswerTable";
-
+import ResultsStatsPage from "../components/User/ResultsStatsPage";
+import UserLayout from "../components/User/UserLayout";
 const App = () => {
     const [isLoading, setIsLoading] = useState(true);
 const [isLoggedIn, setIsLoggedIn] = useState(undefined); // undefined ban đầu để tránh nhấp nháy
@@ -133,8 +134,11 @@ useEffect(() => {
 
                     {/* User Protected Routes */}
                     <Route element={<UserRoute isLoggedIn={isLoggedIn} />}>
-                        <Route path="/user" element={<UserDashboard />} />
-                        <Route path="/user/quizzes" element={<AssignedQuizzes />} />
+                    <Route path="/user" element={<UserLayout />}>
+    <Route index element={<UserDashboard />} />
+    <Route path="quizzes" element={<AssignedQuizzes />} />
+    <Route path="results" element={<ResultsStatsPage />} />
+  </Route>
                     </Route>
 
                     {/* 404 fallback */}

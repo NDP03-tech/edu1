@@ -25,10 +25,10 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // CORS
 app.use(cors({
-    origin: 'http://localhost:3000', // Cho phép từ frontend
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Thêm OPTIONS cho preflight request
+    origin: true, // Cho phép tất cả origin (hoặc dùng array để giới hạn)
     credentials: true
-}));
+  }));
+  
 
 // Xử lý preflight request
 app.options('*', cors());
@@ -41,7 +41,7 @@ mongoose.connect('mongodb://localhost:27017/Vestaedu')
 // Sử dụng routes
 
 app.use('/api/results', resultRoutes);
-app.use('/courses', courseRoutes);
+app.use('/api/course', courseRoutes);
 app.use('/api', userRoutes); // Route cho user
 app.use('/api/blog', blogRoutes); // Route cho blog
 app.use('/api/events', eventRoutes); // Route cho blog

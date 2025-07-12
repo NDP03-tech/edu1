@@ -160,13 +160,14 @@ const QuizPreviewWrapper = () => {
     }
   
     const validQuestionIds = questions.map(q => q._id);
-    const answersArray = Object.entries(answers)
-      .filter(([qid]) => validQuestionIds.includes(qid))
-      .map(([qid, ans]) => ({
-        question: qid,
-        answer: ans,
-        type: questions.find(q => q._id === qid)?.question_type || "unknown"
-      }));
+    const answersArray = questions.map(q => {
+      return {
+        question: q._id,
+        answer: answers[q._id] || null, // hoặc '', tùy định nghĩa backend
+        type: q.question_type || "unknown"
+      };
+    });
+    
   
     const token = localStorage.getItem("token");
   

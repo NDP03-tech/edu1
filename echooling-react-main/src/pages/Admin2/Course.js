@@ -1,234 +1,326 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Editor } from '@tinymce/tinymce-react';
 import {
+  Table,
   Button,
+  Modal,
   Form,
   Input,
-  Modal,
-  Table,
   Upload,
   message,
+  Space,
+  Image,
 } from 'antd';
-import { UploadOutlined, SearchOutlined } from '@ant-design/icons';
-import { Editor } from '@tinymce/tinymce-react';
-import moment from 'moment';
+import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
+import './AdminCourse.css';
 
-const AdminCourses = () => {
+const AdminCourse = () => {
   const [courses, setCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
-  const [visible, setVisible] = useState(false);
-  const [editingCourse, setEditingCourse] = useState(null);
+  const [showModal, setShowModal] = useState(false);
   const [form] = Form.useForm();
-  const editorRef = useRef();
-  const [content, setContent] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const fetchCourses = async () => {
-    const token = localStorage.getItem('token');
-    const response = await fetch('http://localhost:5000/courses', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    const data = await response.json();
-    setCourses(data);
-    setFilteredCourses(data);
-  };
+  const [searchText, setSearchText] = useState('');
+  const editorRef = useRef(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editorContent, setEditorContent] = useState('');
 
   useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/course', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        setCourses(data);
+        setFilteredCourses(data);
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách khóa học:', error);
+      }
+    };
     fetchCourses();
   }, []);
 
-  const handleSearch = (e) => {
-    const value = e.target.value.toLowerCase();
-    setSearchTerm(value);
-    const filtered = courses.filter((course) =>
-      Object.values(course).some((field) =>
-        String(field).toLowerCase().includes(value)
-      )
+  useEffect(() => {
+    const filtered = courses.filter(course =>
+      course.title?.toLowerCase().includes(searchText.toLowerCase())
     );
     setFilteredCourses(filtered);
+  }, [searchText, courses]);
+
+  const uploadToLocalServer = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/upload-media', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Upload failed');
+      return data.fileUrl;
+    } catch (err) {
+      message.error('Upload thất bại');
+      return null;
+    }
   };
 
-  const handleEdit = (record) => {
-    setVisible(true);
-    setEditingCourse(record);
-    form.setFieldsValue(record);
-    setContent(record.content || '');
+  const handleFileUpload = async (options, field) => {
+    const { file, onSuccess, onError } = options;
+    const url = await uploadToLocalServer(file);
+    if (url) {
+      form.setFieldValue(field, url);
+      message.success(`${field} uploaded`);
+      onSuccess("OK");
+    } else {
+      onError(new Error('Upload failed'));
+    }
+  };
+
+  const handleEdit = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/course/${id}`);
+      const courseToEdit = await response.json();
+      setShowModal(true);
+      setEditingId(id);
+      setEditorContent(courseToEdit.content || '');
+      setTimeout(() => {
+        form.setFieldsValue(courseToEdit);
+      }, 0);
+    } catch (error) {
+      message.error('Không thể lấy dữ liệu khóa học');
+    }
   };
 
   const handleDelete = async (id) => {
-    const token = localStorage.getItem('token');
-    await fetch(`http://localhost:5000/courses/${id}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    fetchCourses();
-  };
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/course/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-  const handleUpload = async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', 'vestaedu');
-    formData.append('cloud_name', 'dubzoozqi');
+      if (!response.ok) throw new Error('Xóa thất bại');
 
-    const res = await fetch('https://api.cloudinary.com/v1_1/dubzoozqi/image/upload', {
-      method: 'POST',
-      body: formData,
-    });
-    const data = await res.json();
-    return data.secure_url;
-  };
-
-  const onFinish = async (values) => {
-    const token = localStorage.getItem('token');
-    const method = editingCourse ? 'PUT' : 'POST';
-    const url = editingCourse
-      ? `http://localhost:5000/courses/${editingCourse._id}`
-      : 'http://localhost:5000/courses';
-
-    const body = {
-      ...values,
-      content,
-    };
-
-    const res = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      message.error('Lỗi khi lưu khóa học!');
-      return;
+      setCourses(prev => prev.filter(course => course._id !== id));
+      message.success('Đã xóa khóa học');
+    } catch (err) {
+      message.error('Lỗi khi xóa khóa học');
     }
+  };
 
-    message.success(editingCourse ? 'Cập nhật thành công' : 'Tạo mới thành công');
-    setVisible(false);
-    setEditingCourse(null);
-    form.resetFields();
-    fetchCourses();
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+
+      const isEdit = !!editingId;
+      const updatedCourse = {
+        ...values,
+        content: editorContent,
+        createdAt: new Date().toISOString(),
+      };
+
+      const url = isEdit
+        ? `http://localhost:5000/api/course/${editingId}`
+        : 'http://localhost:5000/api/course/create';
+
+      const method = isEdit ? 'PUT' : 'POST';
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updatedCourse),
+      });
+
+      if (!response.ok) throw new Error('Lỗi khi lưu khóa học');
+
+      const refreshed = await fetch('http://localhost:5000/api/course', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const updatedCourses = await refreshed.json();
+      setCourses(updatedCourses);
+      setShowModal(false);
+      form.resetFields();
+      setEditorContent('');
+      setEditingId(null);
+      message.success('Lưu thành công');
+    } catch (error) {
+      console.error('❌ Submit error:', error);
+      message.error('Lỗi khi gửi biểu mẫu');
+    }
   };
 
   const columns = [
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Author', dataIndex: 'author', key: 'author' },
-    { title: 'Language', dataIndex: 'language', key: 'language' },
-    { title: 'Price', dataIndex: 'price', key: 'price' },
-    { title: 'Lessons', dataIndex: 'lesson', key: 'lesson' },
-    { title: 'Duration', dataIndex: 'duration', key: 'duration' },
-    { title: 'Type', dataIndex: 'type', key: 'type' },
+    { title: 'No.', render: (_, __, index) => index + 1 },
+    { title: 'Title', dataIndex: 'title' },
     {
-      title: 'Created',
+      title: 'Created At',
       dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (text) => moment(text).format('YYYY-MM-DD'),
+      render: text => new Date(text).toLocaleString(),
     },
     {
       title: 'Actions',
       render: (_, record) => (
-        <>
-          <Button type="link" onClick={() => handleEdit(record)}>
-            Edit
-          </Button>
-          <Button type="link" danger onClick={() => handleDelete(record._id)}>
-            Delete
-          </Button>
-        </>
+        <Space>
+          <Button type="primary" onClick={() => handleEdit(record._id)}>Edit</Button>
+          <Button type="primary" danger onClick={() => handleDelete(record._id)}>Delete</Button>
+        </Space>
       ),
     },
   ];
 
   return (
-    <div className="p-6">
-      <Input
-        placeholder="Search courses..."
-        prefix={<SearchOutlined />}
-        value={searchTerm}
-        onChange={handleSearch}
-        className="mb-4"
-      />
+    <div className="p-4">
+      <Space style={{ marginBottom: 16 }}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setEditingId(null);
+            setEditorContent('');
+            setShowModal(true);
+            setTimeout(() => form.resetFields(), 0);
+          }}
+        >
+          Add Course
+        </Button>
+        <Input.Search
+          placeholder="Search by title"
+          allowClear
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+      </Space>
 
-      <Button
-        type="primary"
-        onClick={() => {
-          setVisible(true);
-          setEditingCourse(null);
-          form.resetFields();
-          setContent('');
-        }}
-        className="mb-4"
-      >
-        Add Course
-      </Button>
-
-      <Table
-        rowKey="_id"
-        dataSource={filteredCourses}
-        columns={columns}
-        pagination={{ pageSize: 8 }}
-      />
+      <Table columns={columns} dataSource={filteredCourses} rowKey="_id" />
 
       <Modal
-        title={editingCourse ? 'Edit Course' : 'Add Course'}
-        open={visible}
-        onCancel={() => setVisible(false)}
-        onOk={() => form.submit()}
-        width={1000}
+        title={editingId ? 'Edit Course' : 'Add New Course'}
+        open={showModal}
+        onCancel={() => setShowModal(false)}
+        onOk={handleSubmit}
+        width="80vw"
       >
-        <Form form={form} layout="vertical" onFinish={onFinish}>
+        <Form layout="vertical" form={form}>
+          {['image', 'bannerImg', 'authorImg'].map(field => (
+            <Form.Item key={field} label={field} name={field}>
+              <div>
+                <Upload
+                  customRequest={(options) => handleFileUpload(options, field)}
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />}>Upload {field}</Button>
+                </Upload>
+                {form.getFieldValue(field) && (
+                  <Image src={form.getFieldValue(field)} width={100} style={{ marginTop: 10 }} />
+                )}
+              </div>
+            </Form.Item>
+          ))}
+
+          <Form.Item name="title" label="Title" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+
           <Form.Item name="name" label="Course Name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="author" label="Author">
-            <Input />
-          </Form.Item>
-          <Form.Item name="language" label="Language">
-            <Input />
-          </Form.Item>
-          <Form.Item name="lesson" label="Lessons">
-            <Input />
-          </Form.Item>
-          <Form.Item name="price" label="Price">
-            <Input />
-          </Form.Item>
-          <Form.Item name="duration" label="Duration">
-            <Input />
-          </Form.Item>
-          <Form.Item name="type" label="Type">
+
+          <Form.Item name="author" label="Author" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item label="Course Image" name="image" valuePropName="fileList" getValueFromEvent={(e) => e?.fileList}>
-            <Upload
-              customRequest={async ({ file, onSuccess }) => {
-                const url = await handleUpload(file);
-                form.setFieldValue('image', url);
-                onSuccess("ok");
-              }}
-              showUploadList={false}
-            >
-              <Button icon={<UploadOutlined />}>Upload Course Image</Button>
-            </Upload>
-            {form.getFieldValue('image') && (
-              <img src={form.getFieldValue('image')} alt="preview" style={{ width: 100, marginTop: 10 }} />
-            )}
+          <Form.Item name="lesson" label="Lesson" rules={[{ required: true }]}>
+            <Input />
           </Form.Item>
 
-          <Form.Item label="Content">
+          <Form.Item name="price" label="Price" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="duration" label="Duration" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="type" label="Type" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="language" label="Language" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="dis" label="Description" rules={[{ required: true }]}>
+            <Input.TextArea />
+          </Form.Item>
+
+          <Form.Item
+            name="schedule"
+            label="Schedule (comma separated)"
+            rules={[{ required: true }]}
+          >
+            <Input
+              placeholder="e.g. Monday, Wednesday, Friday"
+              onChange={(e) =>
+                form.setFieldValue(
+                  'schedule',
+                  e.target.value.split(',').map(day => day.trim())
+                )
+              }
+            />
+          </Form.Item>
+
+          <Form.Item name="content" label="Content" rules={[{ required: true }]}>
             <Editor
               apiKey="n37usgxk136y7jbgbd22rrry2ki2agrdp3zzkfg8gc0adi22"
-              value={content}
-              onEditorChange={(value) => setContent(value)}
+              onInit={(evt, editor) => (editorRef.current = editor)}
+              value={editorContent}
+              onEditorChange={(content) => {
+                setEditorContent(content);
+                form.setFieldValue('content', content);
+              }}
               init={{
                 height: 300,
                 menubar: false,
-                plugins: 'link image code lists table',
-                toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image',
+                plugins: 'lists link image media table code help wordcount fullscreen',
+                toolbar:
+                  'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | image media | fullscreen | removeformat | help',
+                file_picker_types: 'image',
+                file_picker_callback: (callback, value, meta) => {
+                  if (meta.filetype === 'image') {
+                    const input = document.createElement('input');
+                    input.setAttribute('type', 'file');
+                    input.setAttribute('accept', 'image/*');
+                    input.onchange = async function () {
+                      const file = this.files[0];
+                      const url = await uploadToLocalServer(file);
+                      if (url) {
+                        callback(url, { alt: file.name });
+                      } else {
+                        alert('Upload ảnh thất bại');
+                      }
+                    };
+                    input.click();
+                  }
+                },
+                images_upload_handler: async (blobInfo, success, failure) => {
+                  const file = blobInfo.blob();
+                  const url = await uploadToLocalServer(file);
+                  if (url) {
+                    success(url);
+                  } else {
+                    failure('Upload ảnh thất bại');
+                  }
+                },
               }}
             />
           </Form.Item>
@@ -238,4 +330,4 @@ const AdminCourses = () => {
   );
 };
 
-export default AdminCourses;
+export default AdminCourse;

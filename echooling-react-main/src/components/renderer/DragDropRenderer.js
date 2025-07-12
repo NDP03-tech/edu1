@@ -99,7 +99,7 @@ const DragDropRichRenderer = ({
 
         const placeholder = document.createElement("option");
         placeholder.value = "";
-        placeholder.textContent = "-- Chọn --";
+        placeholder.textContent = "-- Select --";
         placeholder.disabled = true;
         placeholder.hidden = true;
         if (!answerForGrading) {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Editor } from '@tinymce/tinymce-react';
-
+import { convertOldClozeDropLinks } from '/Users/nguyendacphuc/Downloads/edu/edu1/echooling-react-main/src/utils/convertLegacyCloze.js'; 
+import './styles.css';
 const RichTextEditor = ({ value, onChange, onCreateGap, onCreateMultipleGap, onDeleteGap, onAddHint, onCreateDropdown }) => {
   console.log("📥 Editor receives value:", value);
   
@@ -10,14 +11,86 @@ const RichTextEditor = ({ value, onChange, onCreateGap, onCreateMultipleGap, onD
       value={value}
       init={{
         height: 400,
-        menubar: false,
-        extended_valid_elements:
-          'a[class|href|name|target|data-answer|data-options|data-answers|contenteditable],' +
-          'span[class|data-hint|title|contenteditable],' +
-          'span[class|data-hint|data-answers|contenteditable]',
+        content_style: `
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
+      
+       .hint-wrapper {
+  margin-right: 0 !important;
+  white-space: normal !important;
+  
+}
 
-        valid_elements: '*[*]',
-        valid_children: '+body[span],+span[span],+body[a],+span[a]',
+.hint-wrapper + * {
+  margin-left: 0 !important;
+}
+      
+        .hint-icon {
+          font-size: 0.85em;
+          margin-left: 4px;
+          cursor: pointer;
+          top: -2px;
+          left: -2px;
+          position: relative;
+          display: inline;
+        }
+      
+        .hint-icon::after {
+          content: attr(data-hint);
+          position: absolute;
+          top: -30px;
+          left: 0;
+          transform: translateX(10px);
+          background-color: #333;
+          color: #fff;
+          padding: 6px 5px;
+          border-radius: 6px;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          font-family: "Segoe UI", "Helvetica Neue", "Arial", "sans-serif";
+          transition: opacity 0.3s ease;
+          unicode-bidi: isolate;
+          z-index: 9999;
+        }
+      
+        .hint-icon:hover::after {
+          opacity: 1;
+        }
+      
+        .cloze,
+        .dropdown,
+        .hint-wrapper {
+          background-color: #ffd6d6;
+          color: #b30000;
+          padding: 2px 4px;
+          border-radius: 4px;
+          display: inline-block;
+        }
+      
+        /* ✅ Chính dòng này fix underline */
+        a.cloze, a.dropdown {
+          text-decoration: none !important;
+        }
+      
+        .dropdown-icon {
+          font-size: 0.5em;
+          margin-left: 4px;
+          display: inline;
+          color: #555;
+        }
+      `,
+        menubar: false,
+        verify_html: false,
+        content_css: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
+        cleanup: false,
+        inline_styles: true,
+        entity_encoding: 'raw',
+        forced_root_block: false,
+        valid_elements: '*[*]', // Cho phép mọi thẻ và mọi thuộc tính
+  extended_valid_elements: 'a[class|href|title|data-*],span[class|title|data-*],i[class|data-*]', // 🔥 Thêm rõ `title`
+  custom_elements: 'a,span',
+  valid_children: '+body[span],+span[span],+body[a],+span[a]',
+        allow_html_in_named_anchor: true,
         
         plugins: [
           'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
@@ -105,7 +178,20 @@ const RichTextEditor = ({ value, onChange, onCreateGap, onCreateMultipleGap, onD
 
 
         setup: function (editor) {
+          editor.on('Paste PostProcess', () => {
+            setTimeout(() => convertOldClozeDropLinks(editor.getBody()), 10);
+          });
+        
+          // ✅ Tự động convert khi editor load nội dung ban đầu
+          editor.on('LoadContent', () => {
+            setTimeout(() => convertOldClozeDropLinks(editor.getBody()), 10);
+          });
+          editor.on('SetContent', () => {
+            setTimeout(() => convertOldClozeDropLinks(editor.getBody()), 10);
+          });
 
+          
+        
           editor.ui.registry.addMenuButton('dropdownButton', {
             text: 'Dropdown',
             fetch: (callback) => {
@@ -224,13 +310,9 @@ const RichTextEditor = ({ value, onChange, onCreateGap, onCreateMultipleGap, onD
                     return;
                   }
 
-                  const encodedHint = hintText.replace(/"/g, '&quot;');
-                  const gapHTML = `
-                    <span class="hint-wrapper">
-                      <span class="cloze">${selectedText}</span>
-                      <span class="hint-icon" data-hint="${encodedHint}">💡</span>
-                    </span>
-                  `;
+                  const encodedHint = hintText.replace(/&/g, '&amp;')
+                  .replace(/"/g, '&quot;');
+                  const gapHTML = `<span class="hint-wrapper"><span class="cloze">${selectedText}</span><i class="fa-solid fa-circle-info hint-icon" data-hint="${encodedHint}"></i></span>`;
                   editor.insertContent(gapHTML);
 
                   if (typeof onAddHint === 'function') {
@@ -269,52 +351,11 @@ const RichTextEditor = ({ value, onChange, onCreateGap, onCreateMultipleGap, onD
           });
 
         },
-
-        content_style: `.hint-wrapper {
-          display: inline-block;
-          position: relative;
-        }
-        
-        .hint-icon {
-          position: relative;
-          font-size: 0.8em;
-          margin-left: 4px;
-          cursor: pointer;
-          box-sizing: border-box;
-        }
-        
-        .hint-icon::after {
-          content: attr(data-hint);
-          position: absolute;
-          top: -36px;
-          left: 100%;
-          transform: translateX(10px) translateY(0);
-          transform-origin: top left;
-          background-color: #333;
-          color: #fff;
-          padding: 6px 10px;
-          border-radius: 6px;
-          white-space: nowrap;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.3s ease;
-          z-index: 9999;
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-          border: 0;
-          font-size: 13px;
-          font-family: sans-serif;
-          line-height: 1.5;
-          text-align: left;
-          vertical-align: baseline;
-        }
-        
-        .hint-icon:hover::after {
-          opacity: 1;
-        }`,
       }}
-      onEditorChange={(content) => onChange(content)}
+      onEditorChange={(content) => {
+       
+        onChange(content);
+      }}
     />
   );
 };

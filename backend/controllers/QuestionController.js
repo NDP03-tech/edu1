@@ -10,6 +10,8 @@ function shuffleArray(array) {
 
 // Create Question
 // Create Question
+const extractFromHTML = require('../utils/extractGaps');
+
 exports.createQuestion = async (req, res) => {
   try {
     const {
@@ -18,29 +20,28 @@ exports.createQuestion = async (req, res) => {
       questionType,
       points,
       explanation,
-      gaps,
-      options,
-      dropdowns,
-      hintWords,
       readingContent,
+      options = [],
     } = req.body;
 
-    // Map camelCase fields to snake_case schema fields
+    const { gaps, dropdowns, hintWords } = extractFromHTML(questionText);
+
     const question = new Question({
       quiz_id,
       question_text: questionText,
       points,
       explanation,
       gaps,
-      options,
       dropdowns,
       hintWords,
       question_type: questionType,
+      readingContent,
+      options: ['checkboxes', 'multiple-choice'].includes(questionType) ? options : [],
     });
 
     await question.save();
-
     const shuffledOptions = shuffleArray([...question.options]);
+
     res.status(201).json({ ...question.toObject(), options: shuffledOptions });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -48,24 +49,30 @@ exports.createQuestion = async (req, res) => {
 };
 
 
+
 // Update Question
 exports.updateQuestion = async (req, res) => {
   const { id } = req.params;
   try {
     const question = await Question.findById(id);
-    if (!question) {
-      return res.status(404).json({ message: 'Question not found' });
-    }
+    if (!question) return res.status(404).json({ message: 'Question not found' });
 
-    // Hỗ trợ cả camelCase và snake_case
-    question.question_text = req.body.question_text ?? req.body.questionText ?? question.question_text;
-    question.question_type = req.body.question_type ?? req.body.questionType ?? question.question_type;
+    const questionText = req.body.question_text ?? req.body.questionText ?? question.question_text;
+    const questionType = req.body.question_type ?? req.body.questionType ?? question.question_type;
+
+    const { gaps, dropdowns, hintWords } = extractFromHTML(questionText);
+
+    // Update fields
+    question.question_text = questionText;
+    question.question_type = questionType;
     question.points = req.body.points ?? question.points;
     question.explanation = req.body.explanation ?? question.explanation;
-    question.gaps = req.body.gaps ?? question.gaps;
-    question.options = req.body.options ?? question.options;
-    question.dropdowns = req.body.dropdowns ?? question.dropdowns;
-    question.hintWords = req.body.hintWords ?? req.body.hint_words ?? question.hintWords;
+    question.gaps = gaps;
+    question.dropdowns = dropdowns;
+    question.hintWords = hintWords;
+    question.options = ['checkboxes', 'multiple-choice'].includes(questionType)
+      ? (req.body.options ?? question.options)
+      : [];
     question.quiz_id = req.body.quiz_id ?? question.quiz_id;
     question.readingContent = req.body.readingContent ?? question.readingContent;
 
@@ -77,6 +84,7 @@ exports.updateQuestion = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
 
 
 // Delete Question

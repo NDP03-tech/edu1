@@ -1,21 +1,22 @@
 
 import { Link } from 'react-router-dom';
-
-
 import blogImg1 from '../../assets/images/blog/1.jpg';
 
 const SinglePost = (props) => { 
     const { blogClass, blogID, blogImage, blogTitle, blogCategory, blogAuthor, blogPublishedDate } = props;
+    console.log('Image URL for blog ID', blogID, ':', blogImage)
     return (
-        <div className={blogClass ? blogClass : 'blog__card mb-50'}>
+        <div className={`${blogClass ? blogClass : 'blog__card mb-50'} h-full flex flex-col justify-between`}>
+
             <div className="blog__thumb w-img p-relative">
                 <Link
                     to={`/blog/${blogID}`}
                     className="blog__thumb--image"
                 >
-                    <img 
-                        src={blogImage ? require(`../../assets/images/blog/${blogImage}`) : require(`../../assets/images/blog/${blogImg1}`)} 
-                        alt={blogTitle}
+                    <img
+                        src={blogImage}
+                        alt={blogTitle || 'Blog'}
+                        
                     />
                 </Link>
                 <em className="b_date">{blogPublishedDate ? blogPublishedDate : 'April 18'}</em>

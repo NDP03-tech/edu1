@@ -11,6 +11,12 @@ import './AdminEvent.css';
 const { TextArea } = Input;
 const { Option } = Select;
 
+const defaultForm = {
+  title: '', category: '', location: '', cost: '', host: '',
+  phone: '', status: '', image: '', bannerImg: '', content: '',
+  date: null, startTime: null
+};
+
 const AdminEvent = () => {
   const [events, setEvents] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -18,118 +24,103 @@ const AdminEvent = () => {
   const [editingId, setEditingId] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [formData, setFormData] = useState({
-    title: '',
-    category: '',
-    location: '',
-    cost: '',
-    host: '',
-    phone: '',
-    status: '',
-    image: '',
-    bannerImg: '',
-    content: '',
-    date: null,
-    startTime: null,
-  });
+  const [formData, setFormData] = useState(defaultForm);
+
+  const token = localStorage.getItem('token');
 
   const fetchEvents = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/events', {
+      const res = await fetch('http://localhost:5000/api/events', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await response.json();
+      const data = await res.json();
       setEvents(data);
-    } catch (error) {
-      console.error('Error fetching events:', error);
+    } catch (err) {
+      console.error('Error fetching events:', err);
     }
+  };
+
+  const fetchEventById = async (_id) => {
+    const res = await fetch(`http://localhost:5000/api/events/${_id}`);
+    const event = await res.json();
+    return event;
   };
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
-  const resetForm = () => {
+  const populateForm = (event) => {
     setFormData({
-      title: '', category: '', location: '', cost: '', host: '',
-      phone: '', status: '', image: '', bannerImg: '', content: '',
-      date: null, startTime: null
+      title: event.title || '',
+      category: event.category || '',
+      location: event.location || '',
+      cost: event.cost || '',
+      host: event.host || '',
+      phone: event.phone || '',
+      status: event.status || '',
+      image: event.image || '',
+      bannerImg: event.bannerImg || '',
+      content: event.content || '',
+      date: event.date ? dayjs(event.date) : null,
+      startTime: event.startTime ? dayjs(event.startTime, 'HH:mm') : null,
     });
   };
 
-  const handleEdit = async (id) => {
-    const response = await fetch(`http://localhost:5000/api/events/${id}`);
-    const eventToEdit = await response.json();
-    setFormData({
-      title: eventToEdit.title || '',
-      category: eventToEdit.category || '',
-      location: eventToEdit.location || '',
-      cost: eventToEdit.cost || '',
-      host: eventToEdit.host || '',
-      phone: eventToEdit.phone || '',
-      status: eventToEdit.status || '',
-      image: eventToEdit.image || '',
-      bannerImg: eventToEdit.bannerImg || '',
-      content: eventToEdit.content || '',
-      date: eventToEdit.date ? dayjs(eventToEdit.date) : null,
-      startTime: eventToEdit.startTime ? dayjs(eventToEdit.startTime, 'HH:mm') : null,
-    });
-    setEditingId(eventToEdit.id);
+  const handleEdit = async (_id) => {
+    const event = await fetchEventById(_id);
+    populateForm(event);
+    setEditingId(event._id);
     setShowModal(true);
   };
 
+  const getPayloadFromFormData = () => ({
+    ...formData,
+    date: formData.date?.toISOString(),
+    startTime: formData.startTime?.format('HH:mm'),
+    createdAt: new Date().toISOString(),
+  });
+
   const handleSubmit = async () => {
     if (!formData.title || !formData.content) {
-      message.error("Title and Content are required");
-      return;
+      return message.error("Title and Content are required");
     }
 
-    const method = editingId ? 'PUT' : 'POST';
     const url = editingId
       ? `http://localhost:5000/api/events/${editingId}`
       : 'http://localhost:5000/api/events/create';
+    const method = editingId ? 'PUT' : 'POST';
 
-    const token = localStorage.getItem('token');
-    const payload = {
-      ...formData,
-      date: formData.date?.toISOString(),
-      startTime: formData.startTime?.format('HH:mm'),
-      createdAt: new Date().toISOString(),
-    };
-
-    const response = await fetch(url, {
+    const res = await fetch(url, {
       method,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(getPayloadFromFormData()),
     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      message.error(err.message || 'Save failed');
-      return;
+    if (!res.ok) {
+      const err = await res.json();
+      return message.error(err.message || 'Save failed');
     }
 
     fetchEvents();
     setShowModal(false);
     setEditingId(null);
-    resetForm();
+    setFormData(defaultForm);
   };
 
-  const handleDelete = async (id) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:5000/api/events/${id}`, {
+  const handleDelete = async (_id) => {
+    const res = await fetch(`http://localhost:5000/api/events/${_id}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
       },
     });
-    if (!response.ok) return message.error('Delete failed');
-    setEvents(prev => prev.filter(e => e.id !== id));
+
+    if (!res.ok) return message.error('Delete failed');
+    setEvents(prev => prev.filter(e => e._id !== _id));
   };
 
   const handleUpload = (info, field) => {
@@ -144,49 +135,121 @@ const AdminEvent = () => {
     }
   };
 
+  const filteredEvents = events.filter(e =>
+    e.title?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const columns = [
-    { title: 'No.', dataIndex: 'index', render: (_, __, i) => i + 1 },
+    { title: 'No.', render: (_, __, i) => i + 1 },
     { title: 'Title', dataIndex: 'title' },
     { title: 'Status', dataIndex: 'status' },
-    { title: 'Created On', dataIndex: 'createdAt', render: val => new Date(val).toLocaleString() },
+    {
+      title: 'Created On',
+      dataIndex: 'createdAt',
+      render: val => new Date(val).toLocaleString()
+    },
     {
       title: 'Actions',
       render: (_, record) => (
         <>
-          <Button type="link" onClick={() => handleEdit(record.id)}>Edit</Button>
-          <Button type="link" danger onClick={() => handleDelete(record.id)}>Delete</Button>
+          <Button type="link" onClick={() => handleEdit(record._id)}>Edit</Button>
+          <Button type="link" danger onClick={() => handleDelete(record._id)}>Delete</Button>
         </>
-      ),
+      )
+    }
+  ];
+
+  const tabItems = [
+    {
+      key: '1',
+      label: 'Basic Info',
+      children: (
+        <>
+          <Input placeholder="Title" value={formData.title} onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))} className="mb-2" />
+          <Input placeholder="Category" value={formData.category} onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))} className="mb-2" />
+          <DatePicker value={formData.date} onChange={date => setFormData(prev => ({ ...prev, date }))} className="w-full mb-2" />
+          <TimePicker value={formData.startTime} onChange={t => setFormData(prev => ({ ...prev, startTime: t }))} format="HH:mm" className="w-full mb-2" />
+          <Input placeholder="Location" value={formData.location} onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))} className="mb-2" />
+          <Input placeholder="Cost" value={formData.cost} onChange={e => setFormData(prev => ({ ...prev, cost: e.target.value }))} className="mb-2" />
+          <Input placeholder="Host" value={formData.host} onChange={e => setFormData(prev => ({ ...prev, host: e.target.value }))} className="mb-2" />
+          <Input placeholder="Phone" value={formData.phone} onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))} className="mb-2" />
+          <Select value={formData.status} onChange={val => setFormData(prev => ({ ...prev, status: val }))} className="w-full mb-2">
+            <Option value="Upcoming">Upcoming</Option>
+            <Option value="Ongoing">Ongoing</Option>
+            <Option value="Finished">Finished</Option>
+          </Select>
+        </>
+      )
     },
+    {
+      key: '2',
+      label: 'Images',
+      children: ['image', 'bannerImg'].map(field => (
+        <div key={field} className="mb-4">
+          <Upload
+            name="file"
+            accept="image/*"
+            action="http://localhost:5000/api/upload-media"
+            showUploadList={false}
+            headers={{ Authorization: `Bearer ${token}` }}
+            onChange={info => handleUpload(info, field)}
+          >
+            <Button icon={<UploadOutlined />}>Upload {field}</Button>
+          </Upload>
+          {formData[field] && <img src={formData[field]} alt={field} style={{ width: 100, marginTop: 8 }} />}
+        </div>
+      ))
+    },
+    {
+      key: '3',
+      label: 'Content',
+      children: (
+        <Editor
+          apiKey="your-tinymce-api-key"
+          value={formData.content}
+          onEditorChange={content => setFormData(prev => ({ ...prev, content }))}
+          init={{
+            height: 300,
+            plugins: 'link image code lists table',
+            toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | link image',
+          }}
+        />
+      )
+    }
   ];
 
   return (
     <div className="p-6">
       <div className="flex justify-between mb-4">
-        <Button type="primary" onClick={() => { resetForm(); setEditingId(null); setShowModal(true); }}>
+        <Button type="primary" onClick={() => { setFormData(defaultForm); setEditingId(null); setShowModal(true); }}>
           Add Event
         </Button>
         <Input.Search
           placeholder="Search by title..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={e => setSearchQuery(e.target.value)}
           style={{ width: '50%' }}
         />
       </div>
 
       <Table
-        rowKey="id"
-        dataSource={events.filter(e => e.title?.toLowerCase().includes(searchQuery.toLowerCase()))}
+        rowKey="_id"
+        dataSource={filteredEvents}
         columns={columns}
-        onRow={(record) => ({ onClick: () => { setSelectedEvent(record); setShowDetailDrawer(true); } })}
+        onRow={record => ({
+          onClick: () => {
+            setSelectedEvent(record);
+            setShowDetailDrawer(true);
+          }
+        })}
       />
 
       <Drawer
         title="Event Details"
         placement="right"
         width={500}
-        onClose={() => setShowDetailDrawer(false)}
         open={showDetailDrawer}
+        onClose={() => setShowDetailDrawer(false)}
       >
         {selectedEvent && (
           <div>
@@ -205,93 +268,11 @@ const AdminEvent = () => {
         open={showModal}
         onCancel={() => setShowModal(false)}
         footer={null}
-        title={editingId ? 'Edit Event' : 'Create New Event'}
+        title={editingId ? 'Edit Event' : 'Create Event'}
         width={800}
         destroyOnClose
       >
-        <Tabs
-          defaultActiveKey="1"
-          items={[
-            {
-              key: '1',
-              label: 'Basic Info',
-              children: (
-                <>
-                  <Input
-                    placeholder="Title"
-                    value={formData.title}
-                    onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="mb-2"
-                  />
-                  <Input placeholder="Category" value={formData.category} onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))} className="mb-2" />
-                  <DatePicker
-                    value={formData.date}
-                    onChange={date => setFormData(prev => ({ ...prev, date }))}
-                    className="w-full mb-2"
-                  />
-                  <TimePicker
-                    value={formData.startTime}
-                    onChange={t => setFormData(prev => ({ ...prev, startTime: t }))}
-                    format="HH:mm"
-                    className="w-full mb-2"
-                  />
-                  <Input placeholder="Location" value={formData.location} onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))} className="mb-2" />
-                  <Input placeholder="Cost" value={formData.cost} onChange={e => setFormData(prev => ({ ...prev, cost: e.target.value }))} className="mb-2" />
-                  <Input placeholder="Host" value={formData.host} onChange={e => setFormData(prev => ({ ...prev, host: e.target.value }))} className="mb-2" />
-                  <Input placeholder="Phone" value={formData.phone} onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))} className="mb-2" />
-                  <Select
-                    value={formData.status}
-                    onChange={val => setFormData(prev => ({ ...prev, status: val }))}
-                    className="w-full mb-2"
-                  >
-                    <Option value="Upcoming">Upcoming</Option>
-                    <Option value="Ongoing">Ongoing</Option>
-                    <Option value="Finished">Finished</Option>
-                  </Select>
-                </>
-              )
-            },
-            {
-              key: '2',
-              label: 'Images',
-              children: (
-                <>
-                  {['image', 'bannerImg'].map(field => (
-                    <div key={field} className="mb-4">
-                      <Upload
-                        name="file"
-                        accept="image/*"
-                        action="http://localhost:5000/api/upload-media"
-                        showUploadList={false}
-                        headers={{ Authorization: `Bearer ${localStorage.getItem('token')}` }}
-                        onChange={info => handleUpload(info, field)}
-                      >
-                        <Button icon={<UploadOutlined />}>Upload {field}</Button>
-                      </Upload>
-                      {formData[field] && <img src={formData[field]} alt={field} style={{ width: 100, marginTop: 8 }} />}
-                    </div>
-                  ))}
-                </>
-              )
-            },
-            {
-              key: '3',
-              label: 'Content',
-              children: (
-                <Editor
-                  apiKey="n37usgxk136y7jbgbd22rrry2ki2agrdp3zzkfg8gc0adi22"
-                  value={formData.content}
-                  onEditorChange={content => setFormData(prev => ({ ...prev, content }))}
-                  init={{
-                    height: 300,
-                    plugins: 'link image code lists table',
-                    toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | link image',
-                  }}
-                />
-              )
-            }
-          ]}
-        />
+        <Tabs defaultActiveKey="1" items={tabItems} />
         <Button type="primary" onClick={handleSubmit} className="w-full mt-4">
           {editingId ? 'Update Event' : 'Create Event'}
         </Button>

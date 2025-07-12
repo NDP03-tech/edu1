@@ -50,3 +50,21 @@ exports.deleteCategoryAndQuizzes = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+
+exports.getQuizzes = async (req, res) => {
+  try {
+    const { category } = req.query;
+    let filter = {};
+
+    if (category && category !== "all") {
+      filter.category = category; // ObjectId dạng string
+    }
+
+    const quizzes = await Quiz.find(filter);
+    res.json(quizzes);
+  } catch (err) {
+    console.error("❌ Error in getQuizzes:", err);
+    res.status(500).json({ message: "Failed to fetch quizzes" });
+  }
+};

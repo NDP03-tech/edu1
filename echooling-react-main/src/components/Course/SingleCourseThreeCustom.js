@@ -13,7 +13,7 @@ console.log("courseDuration:", courseDuration);
         <div className={itemClass ? itemClass : 'single-studies grid-item'}>
             <div className="inner-course">
                 <div className="case-img">
-                    <img src={courseImg ? require(`../../assets/images/course/${courseImg}`) : require(`../../assets/images/course/${courseImg1}`)} alt={courseTitle} />
+                <img src={courseImg ? courseImg : courseImg1} alt={courseTitle} />
                 </div>
                 <div className="case-content"> 
                     <h4 className="case-title"> <Link to={`/course/${courseID}`}>{courseTitle ? courseTitle : 'The Most Complete'}</Link></h4> 

@@ -10,15 +10,16 @@ router.get('/', categoryController.getAllCategories);
 router.post('/', categoryController.createCategory);
 
 // GET tất cả quiz thuộc một danh mục
-router.get('/:category/quizzes', async (req, res) => {
+router.get('/:categoryId/quizzes', async (req, res) => {
   try {
-    const { category } = req.params;
-    const quizzes = await Quiz.find({ category });
+    const { categoryId } = req.params;
+    const quizzes = await Quiz.find({ category: categoryId });
     res.json(quizzes);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
+
 
 // DELETE: Xoá category và tất cả quizzes thuộc category
 router.delete('/:categoryId', categoryController.deleteCategoryAndQuizzes);

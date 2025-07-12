@@ -3,6 +3,7 @@ const Quiz = require("../models/Quiz");
 const Question = require("../models/Question");
 const Class = require ("../models/Class");
 const User = require ("../models/User");
+const { JSDOM } = require("jsdom");
 const mongoose = require('mongoose');
 
 exports.startAttempt = async (req, res) => {
@@ -84,46 +85,39 @@ exports.submitAttempt = async (req, res) => {
 
       const gaps = question.gaps || [];
       const dropdowns = question.dropdowns || [];
-      const gapCount = gaps.length;
-      const dropdownCount = dropdowns.length;
 
       switch (question.question_type) {
         case 'blank-boxes':
         case 'drag-drop-matching':
+        case 'reading':
         case 'generated-dropdowns': {
-          totalItems = gapCount + dropdownCount;
+          const html = question.question_text || "";
+          const dom = new JSDOM(html);
+          const clozes = dom.window.document.querySelectorAll("a.cloze");
+
+          let gapIndex = 0;
+          let dropdownIndex = 0;
+          totalItems = clozes.length;
           totalPossibleScore += totalItems * question.points;
 
-          // Gaps
-          for (let i = 0; i < gapCount; i++) {
-            const rawUserInput = userAnswerObj[i];
-            const correctAnswersLower = (gaps[i]?.correct_answers || []).map(ans => ans.trim().toLowerCase());
+          clozes.forEach((node, idx) => {
+            const isDropdown = node.classList.contains("dropdown");
+            const userInput = (userAnswerObj[idx] || "").trim().toLowerCase();
 
-            if (Array.isArray(rawUserInput)) {
-              const userInputsLower = rawUserInput.map(ans => ans.trim().toLowerCase());
-              const matched = userInputsLower.some(ans => correctAnswersLower.includes(ans));
-              if (matched) {
+            if (isDropdown) {
+              const correct = (dropdowns[dropdownIndex++]?.correct_answer || "").trim().toLowerCase();
+              if (userInput === correct) {
                 correctItems++;
                 earnedScore += question.points;
               }
             } else {
-              const userInput = (rawUserInput || "").trim().toLowerCase();
-              if (correctAnswersLower.includes(userInput)) {
+              const correctAnswers = (gaps[gapIndex++]?.correct_answers || []).map(a => a.trim().toLowerCase());
+              if (correctAnswers.includes(userInput)) {
                 correctItems++;
                 earnedScore += question.points;
               }
             }
-          }
-
-          // Dropdowns
-          for (let i = 0; i < dropdownCount; i++) {
-            const userInput = (userAnswerObj[gapCount + i] || "").trim().toLowerCase();
-            const correctAnswer = (dropdowns[i]?.correct_answer || "").trim().toLowerCase();
-            if (userInput === correctAnswer) {
-              correctItems++;
-              earnedScore += question.points;
-            }
-          }
+          });
           break;
         }
 
@@ -195,8 +189,7 @@ exports.submitAttempt = async (req, res) => {
         }
 
         case 'essay':
-        case 'description':
-        case 'reading':
+        case 'description':  
         case 'speaking': {
           break;
         }
@@ -239,13 +232,28 @@ exports.submitAttempt = async (req, res) => {
       switch (q.question_type) {
         case 'blank-boxes':
         case 'drag-drop-matching':
+        case 'reading':
         case 'generated-dropdowns': {
-          const gapPart = (q.gaps || []).map(g => g.correct_answers?.[0] || "");
-          const dropdownPart = (q.dropdowns || []).map(d => d.correct_answer || "");
-          correct = [...gapPart, ...dropdownPart].reduce((acc, val, idx) => {
-            acc[idx] = val;
-            return acc;
-          }, {});
+          const html = q.question_text || "";
+          const dom = new JSDOM(html);
+          const clozes = dom.window.document.querySelectorAll("a.cloze");
+
+          let gapIndex = 0;
+          let dropdownIndex = 0;
+          let currentIndex = 0;
+          correct = {};
+
+          clozes.forEach(node => {
+            const isDropdown = node.classList.contains("dropdown");
+            if (isDropdown) {
+              const dd = q.dropdowns?.[dropdownIndex++];
+              correct[currentIndex++] = dd?.correct_answer || "";
+            } else {
+              const g = q.gaps?.[gapIndex++];
+              correct[currentIndex++] = g?.correct_answers?.[0] || "";
+            }
+          });
+
           break;
         }
 
@@ -292,6 +300,8 @@ exports.submitAttempt = async (req, res) => {
     res.status(500).json({ error: "Submit failed", details: err.message });
   }
 };
+
+
 
 
 
@@ -396,8 +406,6 @@ exports.getUserQuizSummaryByUserId = async (req, res) => {
   }
 };
 
-
-
 exports.getBestAttemptsByQuiz = async (req, res) => {
   try {
     const { quizId } = req.params;
@@ -487,7 +495,7 @@ exports.getUsersBestAttemptsByQuiz = async (req, res) => {
   const { quizId } = req.params;
 
   try {
-    // 1. Lấy các kết quả tốt nhất của mỗi user
+    // 1. Lấy kết quả tốt nhất của mỗi user
     const bestResults = await UserQuizResult.aggregate([
       { $match: { quiz: new mongoose.Types.ObjectId(quizId) } },
       { $sort: { score: -1, submittedAt: -1 } },
@@ -520,58 +528,108 @@ exports.getUsersBestAttemptsByQuiz = async (req, res) => {
       }
     ]);
 
-    // 2. Lấy tất cả câu hỏi của quiz và extract đáp án đúng
-    const quiz = await Quiz.findById(quizId).populate({
-      path: "questions",
-      model: "Question"
-    });
+    // 2. Lấy câu hỏi và dựng danh sách các phần
+    const questions = await Question.find({ quiz_id: quizId });
 
-    const questionParts = [];       // ["Q1_0", "Q1_1", ...]
-    const correctAnswersRow = [];   // ["answer", "answer", ...]
+    const questionParts = [];
+    const correctAnswersRow = [];
+    const questionIdToParts = new Map();
+    const questionIdToIndex = new Map();
 
-    quiz.questions.forEach((question, qIndex) => {
-      // Gaps (blank-boxes / generated-dropdowns)
-      if (question.gaps?.length > 0) {
-        question.gaps.forEach((gap, i) => {
-          questionParts.push(`Q${qIndex + 1}_${i}`);
-          correctAnswersRow.push(gap.correct_answers?.[0] || "");
-        });
-      }
+    questions.forEach((question, qIndex) => {
+      const partIndices = [];
+      questionIdToIndex.set(question._id.toString(), qIndex);
+
+      // Gaps
+      question.gaps?.forEach((gap, i) => {
+        const correct = gap.correct_answers?.[0] || "";
+        questionParts.push(correct);
+        correctAnswersRow.push(correct);
+        partIndices.push({ type: "gap", index: i });
+      });
 
       // Dropdowns
-      if (question.dropdowns?.length > 0) {
-        question.dropdowns.forEach((dropdown, i) => {
-          questionParts.push(`Q${qIndex + 1}_D${i}`);
-          correctAnswersRow.push(dropdown.correct_answer || "");
-        });
-      }
+      question.dropdowns?.forEach((dropdown, i) => {
+        const correct = dropdown.correct_answer || "";
+        questionParts.push(correct);
+        correctAnswersRow.push(correct);
+        partIndices.push({ type: "dropdown", index: i });
+      });
 
-      // Multiple-choice / Checkboxes
+      // Options (multiple-choice or checkboxes)
       if (["multiple-choice", "checkboxes"].includes(question.question_type)) {
-        question.options.forEach((option, i) => {
-          questionParts.push(`Q${qIndex + 1}_O${i}`);
-          correctAnswersRow.push(option.isCorrect ? option.text : "");
+        question.options?.forEach((option, i) => {
+          const correct = option.isCorrect ? option.text : "";
+          questionParts.push(correct);
+          correctAnswersRow.push(correct);
+          partIndices.push({ type: "option", index: i, optionText: option.text });
         });
-      }
-
-      // Drag-drop matching
-      if (question.question_type === "drag-drop-matching") {
-        questionParts.push(`Q${qIndex + 1}_DDM`);
-        correctAnswersRow.push("matched (dynamic)");
       }
 
       // Essay / Speaking
       if (["essay", "speaking"].includes(question.question_type)) {
-        questionParts.push(`Q${qIndex + 1}_ES`);
+        questionParts.push("(manual grading)");
         correctAnswersRow.push("(manual grading)");
+        partIndices.push({ type: "essay" });
       }
+
+      questionIdToParts.set(question._id.toString(), partIndices);
     });
 
-    res.json({
-      results: bestResults,
-      questionParts,
-      correctAnswersRow
+    // 3. Mapping từng kết quả của user
+    const enrichedResults = bestResults.map(result => {
+      const userAnswersRow = [];
+      const answerStatusRow = [];
+      let correctIndex = 0; // 👈 dùng biến đếm riêng để duyệt correctAnswersRow đúng thứ tự
+
+      for (const question of questions) {
+        const qid = question._id.toString();
+        const qIndex = questionIdToIndex.get(qid);
+        const partDefs = questionIdToParts.get(qid) || [];
+
+        const userAnswerObj = result.answers.find(ans => ans.question.toString() === qid);
+        const userAnswerRaw = userAnswerObj?.answer || {};
+
+        const userAnswers = Array.isArray(userAnswerRaw)
+          ? userAnswerRaw
+          : Object.keys(userAnswerRaw)
+              .sort((a, b) => parseInt(a) - parseInt(b))
+              .map(key => userAnswerRaw[key]);
+
+        let cursor = 0;
+
+        for (const part of partDefs) {
+          const correct = correctAnswersRow[correctIndex++]; // ✅ chính xác vị trí phần hiện tại
+
+          if (["gap", "dropdown"].includes(part.type)) {
+            const userAns = userAnswers[cursor] || "";
+            userAnswersRow.push(userAns);
+            answerStatusRow.push(userAns === correct);
+            cursor++;
+          } else if (part.type === "option") {
+            const selected = Array.isArray(userAnswers)
+              ? userAnswers.includes(part.optionText)
+              : userAnswers === part.optionText;
+
+            userAnswersRow.push(selected ? part.optionText : "");
+            const isCorrect = correct !== "";
+            answerStatusRow.push(isCorrect === selected);
+          } else if (part.type === "essay") {
+            const essayAns = typeof userAnswerRaw === "string" ? userAnswerRaw : "";
+            userAnswersRow.push(essayAns);
+            answerStatusRow.push(null); // Không đánh giá đúng/sai
+          }
+        }
+      }
+
+      return {
+        ...result,
+        userAnswersRow,
+        answerStatusRow
+      };
     });
+
+    res.json({ results: enrichedResults, questionParts, correctAnswersRow });
 
   } catch (error) {
     console.error("Error fetching best attempts:", error);
@@ -580,6 +638,71 @@ exports.getUsersBestAttemptsByQuiz = async (req, res) => {
 };
 
 
+// controllers/userQuizResultController.js
+exports.getUserResultsStats = async (req, res) => {
+  try {
+    const userId = req.user.id;
 
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Lấy tất cả bài đã nộp
+    const results = await UserQuizResult.find({
+      user: userId,
+      submittedAt: { $ne: null }
+    });
+
+    // Tính toán tổng quan
+    let totalSubmitted = 0;
+    let totalPassed = 0;
+    let submittedToday = 0;
+    let passedToday = 0;
+
+    // Thống kê điểm theo ngày
+    const dailyScores = {};
+
+    for (const result of results) {
+      totalSubmitted++;
+      if (result.passed) totalPassed++;
+
+      if (result.submittedAt >= startOfDay && result.submittedAt <= endOfDay) {
+        submittedToday++;
+        if (result.passed) passedToday++;
+      }
+
+      const date = result.submittedAt.toISOString().split('T')[0]; // YYYY-MM-DD
+
+      if (!dailyScores[date]) {
+        dailyScores[date] = { totalScore: 0, count: 0 };
+      }
+
+      dailyScores[date].totalScore += result.score;
+      dailyScores[date].count += 1;
+    }
+
+    // Tạo chartData: điểm trung bình theo ngày
+    const chartData = Object.keys(dailyScores)
+      .map(date => ({
+        date,
+        averageScore: parseFloat((dailyScores[date].totalScore / dailyScores[date].count).toFixed(2))
+      }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    return res.json({
+      totalSubmitted,
+      totalPassed,
+      submittedToday,
+      passedToday,
+      chartData
+    });
+
+  } catch (err) {
+    console.error("❌ Error in getUserResultsStats:", err);
+    return res.status(500).json({ error: "Failed to fetch stats" });
+  }
+};
 
 

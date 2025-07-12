@@ -162,6 +162,12 @@ const QuestionRenderer = ({
       return (
         <ReadingRenderer
           question={question}
+          correctAnswer={correctAnswer}
+      answerStatus={answerStatus}
+      showCorrectAnswer={showCorrectAnswer}
+      correctAnswers={correctAnswer} // ✅ truyền correctAnswer
+      answerStatus={answerStatus}   // ✅ truyền answerStatus
+      frozenAnswers={frozenAnswer}
           initialAnswer={typeof initialAnswer === "string" ? initialAnswer : ""}
           onAnswerChange={onAnswerChange}
         />

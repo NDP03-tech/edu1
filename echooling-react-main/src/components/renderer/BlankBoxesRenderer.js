@@ -1,147 +1,176 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
 const BlankBoxesRenderer = ({
   question,
   initialAnswer = {},
   onAnswerChange,
-  answerStatus = {}, // ✅ truyền từ hệ thống sau khi submit
+  answerStatus = {},
   showCorrectAnswer = false,
   editable = true,
 }) => {
-  const [answers, setAnswers] = useState({});
-  const normalize = (str) => (str || "").trim().toLowerCase();
+  const containerRef = useRef();
+  const answersRef = useRef({});
 
+  const decodeHtmlEntities = (str) => {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = str;
+    return txt.value;
+  };
+
+  const shuffleArray = (arr) => {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  };
 
   useEffect(() => {
-    setAnswers(initialAnswer || {});
-  }, [question?._id, initialAnswer]);
+    answersRef.current = initialAnswer || {};
+    renderInputs();
+  }, [question?._id]);
 
-  const onChange = (index, value) => {
-    const newAnswers = { ...answers, [index]: value };
-    setAnswers(newAnswers);
-    onAnswerChange && onAnswerChange(question._id, newAnswers);
+  useEffect(() => {
+    applyAnswerStatus();
+  }, [answerStatus, showCorrectAnswer]);
+
+  const handleChange = (index, value) => {
+    answersRef.current[index] = value;
+    onAnswerChange?.(question._id, { ...answersRef.current });
   };
 
-  if (!question || !question.question_text) return null;
+  const renderInputs = () => {
+    const container = containerRef.current;
+    if (!container) return;
 
-  const parseQuestionText = () => {
-    const div = document.createElement("div");
-    div.innerHTML = question.question_text;
+    const gapElements = container.querySelectorAll(".cloze");
 
-    let gapIndex = 0;
-    const result = [];
+    gapElements.forEach((el, idx) => {
+      if (el.tagName === "A") {
+        el.addEventListener("click", (e) => e.preventDefault());
+      }
 
-    const walkNodes = (parent) => {
-      parent.childNodes.forEach((node) => {
-        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "") {
-          result.push({ type: "text", content: node.textContent });
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-          const el = node;
-          if (el.classList.contains("cloze")) {
-            const isDropdown = el.classList.contains("dropdown");
-            const index = gapIndex++;
-            if (isDropdown) {
-              const options = JSON.parse(el.dataset.options || "[]");
-              result.push({ type: "dropdown", options, index });
-            } else {
-              result.push({ type: "input", index });
-            }
-          } else {
-            walkNodes(el);
-          }
+      const index = idx.toString();
+      const isDropdown = el.classList.contains("dropdown");
+      el.innerHTML = "";
+
+      let field;
+      if (isDropdown) {
+        let options = [];
+        try {
+          const raw = el.dataset.options || "[]";
+          const decoded = decodeHtmlEntities(raw);
+          options = JSON.parse(decoded);
+        } catch (err) {
+          console.error("❌ Dropdown parse error:", err, el.dataset.options);
         }
-      });
-    };
 
-    walkNodes(div);
-    return result;
+        if (editable) options = shuffleArray(options);
+
+        field = document.createElement("select");
+        field.className = "form-select d-inline-block gap-dropdown";
+        field.style = `
+          width: auto;
+          margin: 0 4px;
+          padding: 4px 30px 4px 8px;
+          font-size: 14px;
+        `;
+        if (!editable) field.disabled = true;
+
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = "--Select--";
+        defaultOption.disabled = true;
+        defaultOption.hidden = true;
+        field.appendChild(defaultOption);
+
+        options.forEach((opt) => {
+          const optEl = document.createElement("option");
+          optEl.value = opt;
+          optEl.textContent = opt;
+          field.appendChild(optEl);
+        });
+
+        field.value = answersRef.current[index] ?? "";
+        field.onchange = (e) => handleChange(index, e.target.value);
+      } else {
+        field = document.createElement("input");
+        field.type = "text";
+        field.className = "form-control d-inline-block gap-input";
+        field.style = `
+          width: auto;
+          min-width: 30px;
+          margin: 0 4px;
+          padding: 4px 8px;
+          font-size: 14px;
+          border-radius: 4px;
+          border: 1px solid #ccc;
+        `;
+        if (!editable) field.disabled = true;
+
+        field.value = answersRef.current[index] ?? "";
+        field.oninput = (e) => handleChange(index, e.target.value);
+      }
+
+      field.dataset.index = index;
+      el.appendChild(field);
+    });
+
+    applyAnswerStatus();
+    cleanUpAfterRender(container);
   };
 
-  const parsed = parseQuestionText();
+  const applyAnswerStatus = () => {
+    const container = containerRef.current;
+    if (!container || !showCorrectAnswer) return;
 
-  const getStyle = (index) => {
-    if (!showCorrectAnswer) return {};
-    if (answerStatus[index] === true) {
-      return { backgroundColor: "#d4edda", borderColor: "#28a745" }; // Green
-    } else if (answerStatus[index] === false) {
-      return { backgroundColor: "#f8d7da", borderColor: "#dc3545" }; // Red
-    }
-    return {};
+    const gapElements = container.querySelectorAll(".cloze");
+    gapElements.forEach((el, idx) => {
+      const index = idx.toString();
+      const input = el.querySelector("input, select");
+      const correct = question?.gaps?.correct_answers?.[index];
+
+      if (input) {
+        input.style.backgroundColor = "";
+        input.style.borderColor = "#ccc";
+      }
+
+      el.querySelectorAll(".correct-answer").forEach((n) => n.remove());
+
+      if (input && answerStatus[index] === true) {
+        input.style.backgroundColor = "#d4edda";
+        input.style.borderColor = "#28a745";
+      } else if (input && answerStatus[index] === false) {
+        input.style.backgroundColor = "#f8d7da";
+        input.style.borderColor = "#dc3545";
+
+        if (correct) {
+          const span = document.createElement("span");
+          span.className = "correct-answer text-muted small ms-1";
+          span.textContent = `(${correct})`;
+          el.appendChild(span);
+        }
+      }
+    });
   };
-  
+
+  const cleanUpAfterRender = (container) => {
+    const wrappers = container.querySelectorAll(".hint-wrapper");
+    wrappers.forEach((wrapper) => {
+      const next = wrapper.nextSibling;
+      if (next?.nodeType === 3 && next.nodeValue.includes("\u00A0")) {
+        next.nodeValue = next.nodeValue.replace(/\u00A0+/g, ""); // Xoá all &nbsp;
+      }
+    });
+  };
 
   return (
-    <div className="rendered-question">
-      {parsed.map((item, idx) => {
-        const correct = question?.gaps?.correct_answers?.[item.index];
-        const isIncorrect = showCorrectAnswer && answerStatus[item.index] === false;
-
-        if (item.type === "text") return <span key={idx}>{item.content}</span>;
-
-        if (item.type === "input") {
-          return (
-            <span key={idx} style={{ display: "inline-block" }}>
-              <input
-                type="text"
-                className="form-control d-inline-block gap-input"
-                style={{
-                  width: "auto",
-                  minWidth: 30,
-                  margin: "0 4px",
-                  padding: "4px 8px",
-                  fontSize: 14,
-                  ...getStyle(item.index),
-                }}
-                value={answers[item.index] ?? ""}
-                onChange={(e) => onChange(item.index, e.target.value)}
-                disabled={!editable}
-              />
-              {isIncorrect && correct && (
-                <span className="text-muted small ms-1">
-                  ({correct})
-                </span>
-              )}
-            </span>
-          );
-        }
-
-        if (item.type === "dropdown") {
-          return (
-            <span key={idx} style={{ display: "inline-block" }}>
-              <select
-                className="form-select d-inline-block gap-dropdown"
-                style={{
-                  width: "auto",
-                  margin: "0 4px",
-                  padding: "4px 8px",
-                  fontSize: 14,
-                  ...getStyle(item.index),
-                }}
-                value={answers[item.index] ?? ""}
-                onChange={(e) => onChange(item.index, e.target.value)}
-                disabled={!editable}
-              >
-                <option value="" disabled hidden>
-                  -- Chọn --
-                </option>
-                {item.options.map((opt, i) => (
-                  <option key={i} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-              {isIncorrect && correct && (
-                <span className="text-muted small ms-1">
-                  ({correct})
-                </span>
-              )}
-            </span>
-          );
-        }
-
-        return null;
-      })}
-    </div>
+    <div
+      ref={containerRef}
+      className="rendered-question"
+      dangerouslySetInnerHTML={{ __html: question?.question_text || "" }}
+    />
   );
 };
 

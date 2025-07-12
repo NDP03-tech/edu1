@@ -179,9 +179,9 @@ const QuizBuilder = () => {
             <button className="btn btn-success me-2" onClick={handleSaveQuizInfo}>
                Save Quiz
             </button>
-            <button className="btn btn-info" onClick={() => navigate(`/admin/quiz-preview/${quizId}`)}>
+            <button className="btn btn-info" onClick={() => navigate(`/user/do-quiz/${quizId}`)}>
              Preview Quiz
-            </button>
+            </button> 
           </div>
         </>
       )}

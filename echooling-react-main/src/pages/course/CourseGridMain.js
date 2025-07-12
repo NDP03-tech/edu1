@@ -19,7 +19,7 @@ const CourseGridMain = () => {
     useEffect(() => {
         const fetchCourses = async () => {
             try {
-                const response = await fetch("http://localhost:5000/courses");
+                const response = await fetch("http://localhost:5000/api/course");
                 if (!response.ok) {
                     throw new Error("Lỗi khi lấy danh sách khóa học");
                 }

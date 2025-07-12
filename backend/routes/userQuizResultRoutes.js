@@ -22,5 +22,5 @@ router.get("/attempts/:quizId",authenticateToken, userQuizResultController.getAl
 router.get('/user-summary/:userId', authenticateToken, userQuizResultController.getUserQuizSummaryByUserId);
 router.get('/best-attempts/:quizId', authenticateToken, userQuizResultController.getBestAttemptsByQuiz);
 router.get('/quiz/:quizId/best-attempts', userQuizResultController.getUsersBestAttemptsByQuiz);
-
+router.get('/user/results-stats', authenticateToken, userQuizResultController.getUserResultsStats);
 module.exports = router;

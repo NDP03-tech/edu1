@@ -3,7 +3,7 @@ import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import { subDays } from 'date-fns';
 import UserHeader from '../../components/User/userHeader';
-
+import QuoteOfTheDay from '../../components/QuoteOfTheDay';
 const UserDashboard = () => {
   const [activityData, setActivityData] = useState([]);
 
@@ -60,10 +60,10 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <UserHeader />
       <main className="max-w-screen-xl mx-auto p-4">
-        <h2 className="text-xl sm:text-2xl font-semibold mb-4">🎯 Bảng điều khiển hoạt động</h2>
-        <p className="mb-4 text-gray-600">Lịch sử làm bài của bạn trong 1 năm gần đây:</p>
+      <QuoteOfTheDay />
+      <p className="mb-6 text-gray-800">Your quiz activity over the past year:</p>
+
 
         <div className="bg-white p-4 rounded shadow w-full overflow-x-auto">
           <div className="scale-[0.8] sm:scale-100 origin-top-left">

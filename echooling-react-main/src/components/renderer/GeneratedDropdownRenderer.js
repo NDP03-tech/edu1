@@ -23,21 +23,26 @@ const GeneratedDropdownRenderer = ({
   editable = true,
   initialAnswer = {},
   onAnswerChange,
+  correctAnswer,
+  answerStatus,
+  showCorrectAnswer,
 }) => {
-  // Lưu dạng: { 0: "answer1", 1: "answer2" }
   const [selectedAnswers, setSelectedAnswers] = useState({});
 
-  // Khi question hoặc initialAnswer thay đổi thì cập nhật state
-  useEffect(() => {
+  const combinedGaps = [...(question.gaps || []), ...(question.dropdowns || [])]
+    .map((item) => ({
+      ...item,
+      type: item.correct_answers ? "gap" : "dropdown",
+    }))
+    .sort((a, b) => a.position - b.position);
 
-    console.log("⏬ initialAnswer:", initialAnswer)
+  useEffect(() => {
     if (initialAnswer && typeof initialAnswer === "object") {
       setSelectedAnswers({ ...initialAnswer });
     } else {
       setSelectedAnswers({});
     }
   }, [question._id, initialAnswer]);
-  
 
   const handleSelectChange = (gapIndex, value) => {
     const updated = {
@@ -48,48 +53,55 @@ const GeneratedDropdownRenderer = ({
     onAnswerChange?.(question._id, updated);
   };
 
-  if (!question?.question_text || !Array.isArray(question.gaps)) {
+  if (!question?.question_text || combinedGaps.length === 0) {
     return <p>Invalid question data</p>;
   }
-
-  // Tách câu hỏi thành các phần, thay các "a.cloze" bằng select dropdown
-  // Vì bạn có question_text chứa <a class="cloze">...</a>, ta sẽ parse nó như HTML rồi render
-  // Nhưng React không parse HTML string tự động => dùng dangerouslySetInnerHTML cho phần text còn lại, rồi thay bằng dropdowns
-
-  // Cách đơn giản: tách câu hỏi bằng regex để thay select theo thứ tự gaps
-
-  // Mình sẽ render câu hỏi theo dạng:
-  // text trước gap 0, dropdown 0, text giữa gap 0 và gap 1, dropdown 1, ...
-
-  // Vì câu hỏi được lưu dưới dạng string html, ta sẽ dùng thư viện DOMParser để parse
-  // Nhưng trong React thì dùng DOMParser khá phức tạp, bạn có thể chuyển câu hỏi về dạng template với vị trí gaps
-
-  // Ở đây mình giả sử question.question_text dạng chuỗi html chứa <a class="cloze">...</a> theo thứ tự gaps
-
-  // Mình sẽ dùng DOMParser để chia nhỏ, sau đó render lại trong React
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(question.question_text, "text/html");
   const nodes = Array.from(doc.body.childNodes);
 
-  // Hàm hỗ trợ render từng node
   const renderNode = (node, gapIndexRef) => {
     if (node.nodeType === Node.TEXT_NODE) {
       return node.textContent;
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-      if (node.tagName.toLowerCase() === "a" && node.classList.contains("cloze")) {
+      const tagName = node.tagName.toLowerCase();
+
+      // ✅ Inject "border" class to table, td, th
+      if (["table", "td", "th"].includes(tagName)) {
+        node.classList.add("border");
+      }
+
+      if (tagName === "a" && node.classList.contains("cloze")) {
         const gapIndex = gapIndexRef.current;
+        const gapData = combinedGaps[gapIndex];
         gapIndexRef.current += 1;
 
-        const gapData = question.gaps[gapIndex];
         if (!gapData) return null;
 
-        const correctAnswer = extractCorrectAnswer(gapData);
-        if (!correctAnswer) return null;
+        let correctAns;
+        let choices = [];
 
-        let choices = getRandomChoices(correctAnswer, question.gaps, 4);
+        if (gapData.type === "gap") {
+          correctAns = extractCorrectAnswer(gapData);
+          choices = getRandomChoices(correctAns, question.gaps, 4);
+        } else if (gapData.type === "dropdown") {
+          correctAns = gapData.correct_answer;
+          choices = Array.isArray(gapData.options) ? [...gapData.options] : [];
 
-        // Đảm bảo giá trị chọn hiện tại nằm trong choices
+          if (choices.length === 0) {
+            const dataOptions = node.getAttribute("data-options");
+            try {
+              const parsed = JSON.parse(dataOptions);
+              if (Array.isArray(parsed)) {
+                choices = parsed;
+              }
+            } catch (err) {
+              console.warn("Invalid data-options:", dataOptions);
+            }
+          }
+        }
+
         const selectedValue = selectedAnswers[gapIndex] || "";
 
         if (selectedValue && !choices.includes(selectedValue)) {
@@ -98,16 +110,35 @@ const GeneratedDropdownRenderer = ({
 
         choices = [...new Set(choices)].sort(() => 0.5 - Math.random());
 
+        const isCorrect = answerStatus?.[gapIndex];
+
         return (
           <select
             key={`select-${gapIndex}`}
-            className="form-select d-inline-block mx-1"
-            style={{ width: "auto" }}
+            className={`d-inline-block mx-1 dropdown-select ${
+              showCorrectAnswer
+                ? isCorrect === true
+                  ? "border-success text-success"
+                  : isCorrect === false
+                  ? "border-danger text-danger"
+                  : ""
+                : ""
+            }`}
+            style={{
+              width: "auto",
+              maxWidth: "180px",
+              textAlign: "center",
+              textAlignLast: "center",
+              appearance: "none",
+              fontSize: "0.9rem",
+              borderRadius: "8px",
+              padding: "2px 3px",
+            }}
             value={selectedValue}
             disabled={!editable}
             onChange={(e) => handleSelectChange(gapIndex, e.target.value)}
           >
-            <option value="">{editable ? "-- chọn --" : ""}</option>
+            <option value="">{editable ? "-- Select --" : ""}</option>
             {choices.map((choice) => (
               <option key={choice} value={choice}>
                 {choice}
@@ -116,11 +147,15 @@ const GeneratedDropdownRenderer = ({
           </select>
         );
       } else {
-        // Nếu là element khác, render con của nó
         return React.createElement(
-          node.tagName.toLowerCase(),
-          { key: Math.random() }, // bạn có thể dùng key khác nếu muốn
-          Array.from(node.childNodes).map((child) => renderNode(child, gapIndexRef))
+          tagName,
+          {
+            key: Math.random(),
+            className: node.className || undefined,
+          },
+          Array.from(node.childNodes).map((child) =>
+            renderNode(child, gapIndexRef)
+          )
         );
       }
     }

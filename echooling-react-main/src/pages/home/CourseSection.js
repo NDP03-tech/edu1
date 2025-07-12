@@ -1,24 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import ReactPaginate from 'react-paginate'; // Import thư viện phân trang
+import ReactPaginate from 'react-paginate';
 import SectionTitle from '../../components/SectionTitle';
 import SingleCourseThreeCustom from '../../components/Course/SingleCourseThreeCustom';
-import courses from '../../data/Courses.json';
+import axios from 'axios';
 
-const itemsPerPage = 3; // Số khóa học hiển thị trên mỗi trang
+const itemsPerPage = 3;
 
 const Course = () => {
-    const [currentPage, setCurrentPage] = useState(0); // State để theo dõi trang hiện tại
+    const [courses, setCourses] = useState([]); // Dữ liệu từ API
+    const [currentPage, setCurrentPage] = useState(0);
+    const [loading, setLoading] = useState(true);
 
-    // Tính toán dữ liệu hiển thị theo trang
-    const offset = currentPage * itemsPerPage; // Xác định vị trí bắt đầu của trang hiện tại
-    const displayedCourses = courses.slice(offset, offset + itemsPerPage); // Lấy danh sách khóa học theo trang
+    useEffect(() => {
+        // Gọi API khi component được render
+        const fetchCourses = async () => {
+            try {
+                const res = await axios.get('http://localhost:5000/api/course/'); // Đổi đường dẫn nếu khác
+                setCourses(res.data);
+                setLoading(false);
+            } catch (err) {
+                console.error('Lỗi khi lấy danh sách khoá học:', err);
+                setLoading(false);
+            }
+        };
 
-    // Hàm xử lý khi người dùng bấm chuyển trang
+        fetchCourses();
+    }, []);
+
+    const offset = currentPage * itemsPerPage;
+    const displayedCourses = courses.slice(offset, offset + itemsPerPage);
+
     const handlePageClick = ({ selected }) => {
-        console.log("Selected page:", selected); // Kiểm tra trang được chọn
         setCurrentPage(selected);
     };
+
+    if (loading) return <div className="text-center">Đang tải khoá học...</div>;
 
     return (
         <div className="popular__course__area pt---100 pb---100">
@@ -38,16 +55,36 @@ const Course = () => {
                                 courseDis={data.dis}
                                 courseAuthor={data.author}
                                 courseDuration={data.duration}
-                                courseSchedule={data.schedule} // Thêm lịch học
+                                courseSchedule={data.schedule}
                             />
                         </div>
                     ))}
                 </div>
 
-        
-                <div className="text-center">
+                {/* Phân trang */}
+                <div className="pagination-container text-center mt-4">
+                    <ReactPaginate
+                        previousLabel={'←'}
+                        nextLabel={'→'}
+                        breakLabel={'...'}
+                        pageCount={Math.ceil(courses.length / itemsPerPage)}
+                        marginPagesDisplayed={2}
+                        pageRangeDisplayed={3}
+                        onPageChange={handlePageClick}
+                        containerClassName={'pagination'}
+                        activeClassName={'active'}
+                    />
+                </div>
+
+                <div className="text-center mt-4">
                     <Link to="/course" className="view-courses">
-                        View All Courses <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        View All Courses{' '}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
                     </Link>
                 </div>
             </div>

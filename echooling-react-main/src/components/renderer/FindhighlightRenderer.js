@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 
 const normalizeText = (text) =>
-  text.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()\[\]"]/g, "").replace(/\s{2,}/g, " ").trim().toLowerCase();
+  text
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()\[\]"]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .toLowerCase();
 
 const stripHtmlTags = (html) => {
   const tmp = document.createElement("div");
@@ -9,19 +13,24 @@ const stripHtmlTags = (html) => {
   return tmp.textContent || tmp.innerText || "";
 };
 
+// ✅ Mỗi chunk là 1 từ kèm theo khoảng trắng sau (nếu có)
 const splitTextIntoChunks = (text) => {
-  const words = text.split(/(\s+)/);
+  const regex = /[^\s]+[\s]?/g;
+  let match;
   let position = 0;
-  return words.map((word) => {
-    const chunk = {
+  const chunks = [];
+
+  while ((match = regex.exec(text)) !== null) {
+    const word = match[0];
+    chunks.push({
       text: word,
       start: position,
       end: position + word.length,
-      isWhitespace: /^\s+$/.test(word),
-    };
+    });
     position += word.length;
-    return chunk;
-  });
+  }
+
+  return chunks;
 };
 
 const FindHighlightRenderer = ({
@@ -32,32 +41,31 @@ const FindHighlightRenderer = ({
   onAnswerChange,
 }) => {
   const [chunks, setChunks] = useState([]);
-  const [highlights, setHighlights] = useState(initialAnswer);
-  const [result, setResult] = useState(null);
+  const [highlights, setHighlights] = useState(initialAnswer || []);
   const [selection, setSelection] = useState([]);
 
-  // Log initialAnswer mỗi khi thay đổi (giúp kiểm tra xem data đã load đúng chưa)
   useEffect(() => {
-  
-    setHighlights(initialAnswer);
+    setHighlights(initialAnswer || []);
   }, [initialAnswer]);
 
-  // Tách text thành chunks mỗi khi câu hỏi (question) thay đổi
   useEffect(() => {
     const rawHtml = question?.question_text || "";
-    const stripped = stripHtmlTags(rawHtml.replace(/<a class="cloze" href="#">(.*?)<\/a>/g, "$1"));
+
+    // ✅ Replace all cloze-related <a> tags with their text content + space
+    const unwrapped = rawHtml.replace(
+      /<a\s+[^>]*class="[^"]*cloze[^"]*"[^>]*>(.*?)<\/a>/g,
+      "$1 "
+    );
+
+    // ✅ Remove all remaining HTML tags
+    const stripped = stripHtmlTags(unwrapped).replace(/\s+/g, " ").trim();
+
     const newChunks = splitTextIntoChunks(stripped);
     setChunks(newChunks);
-    
   }, [question]);
-
-  // Log highlights khi thay đổi (giúp kiểm tra highlight đang có)
-  useEffect(() => {
-  }, [highlights]);
 
   const handleMouseUp = () => {
     if (!editable) return;
-
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) {
       setSelection([]);
@@ -74,18 +82,15 @@ const FindHighlightRenderer = ({
       }
     });
 
-   
     setSelection(selectedSpanIds);
   };
 
   const highlightSelection = () => {
     if (!editable || selection.length === 0) return;
-
     const newHighlights = [...highlights];
     selection.forEach((index) => {
       const chunk = chunks[index];
-      if (!chunk || chunk.isWhitespace) return;
-
+      if (!chunk) return;
       const exists = newHighlights.find(
         (h) => h.start === chunk.start && h.end === chunk.end
       );
@@ -98,7 +103,6 @@ const FindHighlightRenderer = ({
       }
     });
 
-    
     setHighlights(newHighlights);
     onAnswerChange?.(questionId, newHighlights);
     setSelection([]);
@@ -110,42 +114,50 @@ const FindHighlightRenderer = ({
     const updated = highlights.filter((h) => {
       return !selection.some((index) => {
         const chunk = chunks[index];
-        return h.start === chunk.start && h.end === chunk.end;
+        return h?.start === chunk?.start && h?.end === chunk?.end;
       });
     });
 
- 
     setHighlights(updated);
     onAnswerChange?.(questionId, updated);
     setSelection([]);
   };
 
- 
-
   return (
     <div>
       {editable && (
         <div className="d-flex gap-2 mb-2">
-          <button onClick={highlightSelection} className="btn btn-sm btn-outline-primary">
+          <button
+            onClick={highlightSelection}
+            className="btn btn-sm btn-outline-primary"
+          >
             Highlight
           </button>
-          <button onClick={removeHighlight} className="btn btn-sm btn-outline-danger">
+          <button
+            onClick={removeHighlight}
+            className="btn btn-sm btn-outline-danger"
+          >
             Remove Highlight
           </button>
-          
         </div>
       )}
 
       <div
         className="p-3 border rounded"
         onMouseUp={handleMouseUp}
-        style={{ userSelect: "text", minHeight: 150, whiteSpace: "pre-wrap" }}
+        style={{
+          userSelect: "text",
+          minHeight: 150,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          width: "100%",
+        }}
       >
         {chunks.map((chunk, index) => {
           const isHighlighted = highlights.some(
             (h) =>
-              Math.abs(h.start - chunk.start) <= 2 &&
-              Math.abs(h.end - chunk.end) <= 2
+              Math.abs(h.start - chunk.start) <= 1 &&
+              Math.abs(h.end - chunk.end) <= 1
           );
           return (
             <span
@@ -153,7 +165,7 @@ const FindHighlightRenderer = ({
               data-index={index}
               style={{
                 backgroundColor: isHighlighted ? "yellow" : "transparent",
-                whiteSpace: chunk.isWhitespace ? "pre-wrap" : "normal",
+                display: "inline-block",
               }}
             >
               {chunk.text}
@@ -161,12 +173,6 @@ const FindHighlightRenderer = ({
           );
         })}
       </div>
-
-      {result && (
-        <div className="mt-3 alert alert-info">
-          Bạn làm đúng {result.correct}/{result.total} ô trống.
-        </div>
-      )}
     </div>
   );
 };

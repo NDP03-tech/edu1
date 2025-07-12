@@ -279,59 +279,112 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
 
             {/* Modal thêm danh mục */}
             {showCategoryModal && (
-                <div className="modal-backdrop show">
-                    <div className="modal d-block" tabIndex="-1" role="dialog">
-                        <div className="modal-dialog" role="document">
-                            <div className="modal-content">
-                                <div className="modal-header">
-                                    <h5 className="modal-title">Thêm danh mục mới</h5>
-                                    <button
-                                        type="button"
-                                        className="btn-close"
-                                        onClick={() => setShowCategoryModal(false)}
-                                    ></button>
-                                </div>
-                                <div className="modal-body">
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        placeholder="Tên danh mục mới"
-                                        value={newCategory}
-                                        onChange={(e) => setNewCategory(e.target.value)}
-                                    />
-                                </div>
-                                <div className="modal-footer">
-                                    <button
-                                        className="btn btn-secondary"
-                                        onClick={() => setShowCategoryModal(false)}
-                                    >
-                                        Hủy
-                                    </button>
-                                    <button
-                                        className="btn btn-primary"
-                                        onClick={async () => {
-                                            try {
-                                                const res = await axios.post("http://localhost:5000/api/categories", {
-                                                    name: newCategory,
-                                                });
-                                                const newCat = res.data.name;
-                                                setCategories((prev) => [...prev, newCat]);
-                                                setCategory(newCat);
-                                                setNewCategory('');
-                                                setShowCategoryModal(false);
-                                            } catch (err) {
-                                                alert("❌ Không thể thêm danh mục");
-                                            }
-                                        }}
-                                    >
-                                        Lưu
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+  <div
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 9999,
+    }}
+  >
+    <div
+      style={{
+        backgroundColor: 'white',
+        padding: '20px',
+        borderRadius: '8px',
+        width: '400px',
+        maxWidth: '90%',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px',
+        }}
+      >
+        <h5 style={{ margin: 0 }}>Thêm danh mục mới</h5>
+        <button
+          onClick={() => setShowCategoryModal(false)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            fontSize: '20px',
+            cursor: 'pointer',
+            color: '#666',
+          }}
+        >
+          &times;
+        </button>
+      </div>
+
+      <input
+        type="text"
+        placeholder="Tên danh mục mới"
+        value={newCategory}
+        onChange={(e) => setNewCategory(e.target.value)}
+        style={{
+          width: '100%',
+          padding: '8px',
+          marginBottom: '16px',
+          borderRadius: '4px',
+          border: '1px solid #ccc',
+        }}
+      />
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+        <button
+          onClick={() => setShowCategoryModal(false)}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#ccc',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+          }}
+        >
+          Hủy
+        </button>
+        <button
+          onClick={async () => {
+            try {
+              const res = await axios.post('http://localhost:5000/api/categories', {
+                name: newCategory,
+              });
+              const newCat = res.data.name;
+              setCategories((prev) => [...prev, newCat]);
+              setCategory(newCat);
+              setNewCategory('');
+              setShowCategoryModal(false);
+            } catch (err) {
+              alert('❌ Không thể thêm danh mục');
+            }
+          }}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#007bff',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+          }}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
         </div>
     );
 };
